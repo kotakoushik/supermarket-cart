@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Square,
   HelpCircle,
+  Check,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import apiClient from '../api/client';
@@ -39,8 +40,24 @@ const ShoppingAnalystPanel = () => {
   // Set of selected action IDs to apply: Set of action.id
   const [selectedActionIds, setSelectedActionIds] = useState(new Set());
 
-  // Applying state
+  // Applying & confirmation step states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [applying, setApplying] = useState(false);
+
+  // Keyboard shortcut: Escape to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isAnalystOpen) {
+        if (showConfirmModal) {
+          setShowConfirmModal(false);
+        } else {
+          closeAnalyst();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnalystOpen, showConfirmModal, closeAnalyst]);
 
   // Fetch analysis report
   const fetchAnalysis = async (overrides = customOverrides) => {
@@ -60,12 +77,8 @@ const ShoppingAnalystPanel = () => {
 
       setReport(res.data);
 
-      setReport(res.data);
-
-      // Keep user in full control: do not auto-apply or silently force actions
       // Pre-select top non-conflicting actions only if the user hasn't made selections yet
       if (selectedActionIds.size === 0 && res.data.recommendedActions && res.data.recommendedActions.length > 0) {
-        // Select only the top action per product to ensure non-conflicting initial review
         const initialSelected = new Set();
         const seenProducts = new Set();
         res.data.recommendedActions.forEach((a) => {
@@ -167,8 +180,8 @@ const ShoppingAnalystPanel = () => {
     };
   }, [report, selectedActionIds, cart.totalAmount]);
 
-  // Apply selected changes
-  const handleApplyChanges = async () => {
+  // Execute selected changes
+  const handleConfirmAndApply = async () => {
     if (!report || selectedActionIds.size === 0) return;
 
     const chosenActions = report.recommendedActions.filter((a) =>
@@ -177,6 +190,7 @@ const ShoppingAnalystPanel = () => {
 
     if (chosenActions.length === 0) {
       showToast('No actions selected to apply', 'info');
+      setShowConfirmModal(false);
       return;
     }
 
@@ -189,10 +203,11 @@ const ShoppingAnalystPanel = () => {
 
       await refreshCart();
       showToast(
-        `Applied ${chosenActions.length} change(s)! Estimated savings: ₹${liveCalculation.savings.toFixed(2)}`,
+        `Applied ${chosenActions.length} optimization(s)! Estimated savings: ₹${liveCalculation.savings.toFixed(2)}`,
         'success'
       );
       setSelectedActionIds(new Set());
+      setShowConfirmModal(false);
       await fetchAnalysis(customOverrides);
     } catch (err) {
       showToast(err.message || 'Failed to apply changes', 'error');
@@ -208,420 +223,558 @@ const ShoppingAnalystPanel = () => {
   const isCartEmpty = !cart.items || cart.items.length === 0;
 
   return (
-    <div className="modal-overlay" onClick={closeAnalyst} style={{ zIndex: 120 }}>
-      <div
-        className="modal-content analyst-panel-content"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: '820px',
-          width: '95%',
-          maxHeight: '92vh',
-          padding: '28px',
-          borderRadius: '20px',
-        }}
-      >
-        {/* Header */}
-        <div className="analyst-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', pb: '16px' }}>
+    <div
+      className="analyst-drawer-overlay"
+      onClick={closeAnalyst}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="analyst-title"
+    >
+      <div className="analyst-drawer" onClick={(e) => e.stopPropagation()}>
+        {/* Drawer Header */}
+        <div className="analyst-drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: 'linear-gradient(135deg, #059669, #0284c7)', color: 'white', padding: '10px', borderRadius: '14px', display: 'flex' }}>
-              <Bot size={28} />
+            <div
+              style={{
+                background: 'var(--brand-forest)',
+                color: 'white',
+                padding: '9px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+              }}
+              aria-hidden="true"
+            >
+              <Bot size={24} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                  FreshCart AI Shopping Analyst
+                <h2 id="analyst-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  AI Shopping Analyst
                 </h2>
-                <span style={{ background: '#ecfdf5', color: '#059669', fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '20px' }}>
-                  Smart Cart Audit
+                <span
+                  style={{
+                    background: 'var(--brand-surface)',
+                    color: 'var(--brand-forest)',
+                    border: '1px solid var(--brand-border)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                  }}
+                >
+                  Rule-Based Audit
                 </span>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                Deterministic cart optimization, staple protection & rule-based budget balancing
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                Deterministic budget tracking, staple protection & verified savings
               </p>
             </div>
           </div>
 
-          <button className="modal-close-btn" onClick={closeAnalyst}>
-            <X size={22} />
+          <button
+            className="modal-close-btn"
+            onClick={closeAnalyst}
+            aria-label="Close AI Shopping Analyst"
+          >
+            <X size={20} />
           </button>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-            <RefreshCw size={32} className="animate-spin" style={{ margin: '0 auto 12px', color: '#059669' }} />
-            <h4 style={{ fontWeight: 700, color: '#0f172a' }}>Analyzing Cart Items & Category Rules...</h4>
-            <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Evaluating essentials, optional items, and cheaper verified alternatives.</p>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && !loading && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '20px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px' }}>
-            <AlertTriangle size={28} style={{ margin: '0 auto 8px' }} />
-            <p style={{ fontWeight: 700 }}>{error}</p>
-            <button
-              onClick={() => fetchAnalysis(customOverrides)}
-              style={{ marginTop: '12px', background: '#dc2626', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
-            >
-              Retry Analysis
-            </button>
-          </div>
-        )}
-
-        {/* Empty Cart State */}
-        {isCartEmpty && !loading && !error && (
-          <div style={{ textAlign: 'center', padding: '50px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-            <ShoppingBag size={50} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-              Your Cart is Currently Empty
-            </h3>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '440px', margin: '0 auto 20px' }}>
-              Add some dairy, produce, snacks or household essentials to your cart, and the AI Shopping Analyst will audit your expenditure and find savings!
-            </p>
-            <button
-              onClick={closeAnalyst}
-              style={{
-                background: '#059669',
-                color: 'white',
-                padding: '10px 22px',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-              }}
-            >
-              Browse Supermarket Items
-            </button>
-          </div>
-        )}
-
-        {/* Full Analysis Content */}
-        {!isCartEmpty && !loading && report && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-            {/* 1. Executive Summary & Budget Bar */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '18px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={18} color="#059669" />
-                  <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Expenditure Breakdown</span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Budget:</span>
-                  <div className="budget-input-wrapper" style={{ width: '110px' }}>
-                    <span className="budget-currency-symbol">₹</span>
-                    <input
-                      type="number"
-                      min="1"
-                      className="budget-input"
-                      style={{ width: '100%', padding: '6px 8px 6px 24px', fontSize: '0.88rem' }}
-                      value={budget}
-                      onChange={(e) => updateBudget(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="budget-progress-container" style={{ height: '8px', marginBottom: '12px' }}>
-                <div
-                  className="budget-progress-bar"
-                  style={{
-                    width: `${Math.min(100, Math.round((currentTotal / budgetNum) * 100))}%`,
-                    backgroundColor: currentTotal > budgetNum ? '#ef4444' : currentTotal > budgetNum * 0.85 ? '#f59e0b' : '#10b981',
-                  }}
-                />
-              </div>
-
-              {/* Stat Tiles */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block' }}>Current Total</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>₹{currentTotal.toFixed(2)}</span>
-                </div>
-
-                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block' }}>Core Essentials</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669' }}>₹{Number(report.essentialSubtotal).toFixed(2)}</span>
-                </div>
-
-                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block' }}>Optional / Treats</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f59e0b' }}>₹{Number(report.optionalSubtotal).toFixed(2)}</span>
-                </div>
-
-                <div style={{ background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block' }}>Budget Status</span>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: report.overBudget ? '#dc2626' : '#16a34a' }}>
-                    {report.overBudget ? `+₹${Number(report.budgetDifference).toFixed(2)} Over` : `₹${(budgetNum - currentTotal).toFixed(2)} Left`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Explainable Summary Note */}
-              <div
-                style={{
-                  marginTop: '14px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  background: report.overBudget ? '#fef2f2' : '#f0fdf4',
-                  border: report.overBudget ? '1px solid #fecaca' : '1px solid #bbf7d0',
-                  color: report.overBudget ? '#991b1b' : '#166534',
-                  fontSize: '0.88rem',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                }}
-              >
-                {report.overBudget ? <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px' }} /> : <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} />}
-                <div>
-                  <strong>Analyst Assessment: </strong>
-                  <span>{report.summaryMessage}</span>
-                </div>
-              </div>
+        {/* Drawer Body */}
+        <div className="analyst-drawer-body">
+          {/* Loading State */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }} role="status">
+              <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 12px', color: 'var(--brand-forest)' }} />
+              <h4 style={{ fontWeight: 700, color: 'var(--text-main)' }}>Analyzing Cart Items & Category Rules...</h4>
+              <p style={{ fontSize: '0.84rem', marginTop: '4px' }}>Evaluating essentials, optional items, and cheaper verified alternatives.</p>
             </div>
+          )}
 
-            {/* 2. Categorization Review with Manual Overrides */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                  Cart Categorization & Manual Review
-                </h3>
-                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Click badge to override item classification
-                </span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                {/* Essentials Column */}
-                <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: '12px', padding: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', color: '#166534', fontWeight: 700, fontSize: '0.9rem' }}>
-                    <ShieldCheck size={16} /> Everyday Essentials ({report.essentialItemCount})
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto' }}>
-                    {report.items.filter((i) => i.essential).length === 0 ? (
-                      <span style={{ fontSize: '0.82rem', color: '#64748b' }}>No essentials detected.</span>
-                    ) : (
-                      report.items.filter((i) => i.essential).map((item) => (
-                        <div key={item.productId} style={{ background: 'white', border: '1px solid #bbf7d0', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#14532d' }}>{item.productName}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Qty: {item.quantity} • ₹{Number(item.subtotal).toFixed(2)}</div>
-                          </div>
-                          <button
-                            onClick={() => handleToggleEssential(item.productId, true)}
-                            title="Click to mark as optional"
-                            style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '3px 8px', borderRadius: '20px', fontWeight: 700 }}
-                          >
-                            Essential ⇄
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Optional / Treats Column */}
-                <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '12px', padding: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', color: '#92400e', fontWeight: 700, fontSize: '0.9rem' }}>
-                    <Coffee size={16} /> Discretionary / Optional ({report.optionalItemCount})
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto' }}>
-                    {report.items.filter((i) => !i.essential).length === 0 ? (
-                      <span style={{ fontSize: '0.82rem', color: '#64748b' }}>No optional items in cart.</span>
-                    ) : (
-                      report.items.filter((i) => !i.essential).map((item) => (
-                        <div key={item.productId} style={{ background: 'white', border: '1px solid #fde68a', padding: '8px 10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#78350f' }}>{item.productName}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Qty: {item.quantity} • ₹{Number(item.subtotal).toFixed(2)}</div>
-                          </div>
-                          <button
-                            onClick={() => handleToggleEssential(item.productId, false)}
-                            title="Click to mark as essential"
-                            style={{ fontSize: '0.72rem', background: '#fef3c7', color: '#b45309', padding: '3px 8px', borderRadius: '20px', fontWeight: 700 }}
-                          >
-                            Optional ⇄
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Actionable Recommendations Plan */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                  Proposed Cart Optimizations ({report.recommendedActions.length})
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={handleSelectAll}
-                    style={{ fontSize: '0.78rem', color: '#059669', background: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid #a7f3d0' }}
-                  >
-                    Select All Recommendations
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    style={{ fontSize: '0.78rem', color: '#64748b', background: '#f1f5f9', padding: '4px 10px', borderRadius: '6px', fontWeight: 600, border: '1px solid #e2e8f0' }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-              {report.recommendedActions.length === 0 ? (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#64748b' }}>
-                  <CheckCircle2 size={32} color="#059669" style={{ margin: '0 auto 8px' }} />
-                  <p style={{ fontWeight: 700, color: '#0f172a' }}>Cart is Already Optimized!</p>
-                  <p style={{ fontSize: '0.85rem' }}>No cheaper alternative swaps or item reductions necessary for this selection.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {report.recommendedActions.map((action) => {
-                    const isChecked = selectedActionIds.has(action.id);
-                    return (
-                      <div
-                        key={action.id}
-                        onClick={() => handleToggleAction(action.id)}
-                        style={{
-                          background: isChecked ? '#f0fdf4' : 'white',
-                          border: isChecked ? '1.5px solid #10b981' : '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          padding: '12px 14px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ color: isChecked ? '#059669' : '#94a3b8' }}>
-                          {isChecked ? <CheckSquare size={20} /> : <Square size={20} />}
-                        </div>
-
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span
-                              style={{
-                                fontSize: '0.72rem',
-                                fontWeight: 800,
-                                textTransform: 'uppercase',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                background: action.actionType === 'REPLACE' ? '#dbeafe' : action.actionType === 'REDUCE_QUANTITY' ? '#fef3c7' : '#fee2e2',
-                                color: action.actionType === 'REPLACE' ? '#1d4ed8' : action.actionType === 'REDUCE_QUANTITY' ? '#b45309' : '#b91c1c',
-                              }}
-                            >
-                              {action.actionType === 'REPLACE' ? 'Swap Option' : action.actionType === 'REDUCE_QUANTITY' ? 'Reduce Qty' : 'Remove Item'}
-                            </span>
-                            <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>{action.label}</span>
-                          </div>
-                          <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: '3px' }}>
-                            {action.reason}
-                          </p>
-                        </div>
-
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#059669' }}>
-                            -₹{Number(action.estimatedSavings).toFixed(2)}
-                          </div>
-                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Estimated Savings</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 4. Live Calculation & Apply Bar */}
+          {/* Error State */}
+          {error && !loading && (
             <div
               style={{
-                background: '#0f172a',
-                color: 'white',
-                borderRadius: '16px',
-                padding: '18px 24px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px',
+                background: 'var(--danger-light)',
+                border: '1px solid var(--danger-border)',
+                color: 'var(--danger)',
+                padding: '18px',
+                borderRadius: 'var(--radius-md)',
+                textAlign: 'center',
+              }}
+              role="alert"
+            >
+              <AlertTriangle size={24} style={{ margin: '0 auto 8px' }} />
+              <p style={{ fontWeight: 700 }}>{error}</p>
+              <button
+                type="button"
+                onClick={() => fetchAnalysis(customOverrides)}
+                style={{
+                  marginTop: '10px',
+                  background: 'var(--danger)',
+                  color: 'white',
+                  padding: '7px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                }}
+              >
+                Retry Analysis
+              </button>
+            </div>
+          )}
+
+          {/* Empty Cart State */}
+          {isCartEmpty && !loading && !error && (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '50px 20px',
+                background: 'white',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)',
               }}
             >
-              <div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                  Projected Cart ({liveCalculation.count} selected changes)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-                    ₹{liveCalculation.projectedTotal.toFixed(2)}
-                  </span>
-                  {liveCalculation.savings > 0 && (
-                    <span style={{ color: '#34d399', fontSize: '0.9rem', fontWeight: 700 }}>
-                      (Save ₹{liveCalculation.savings.toFixed(2)})
-                    </span>
-                  )}
-                  {liveCalculation.projectedTotal <= budgetNum && (
-                    <span style={{ background: '#059669', color: 'white', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
-                      ✓ Within Budget!
-                    </span>
-                  )}
-                </div>
-              </div>
+              <ShoppingBag size={48} color="var(--text-subtle)" style={{ margin: '0 auto 14px' }} />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '6px' }}>
+                Your Cart is Empty
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '380px', margin: '0 auto 18px' }}>
+                Add items from our catalog to receive intelligent budget balancing and substitution suggestions.
+              </p>
+              <button
+                type="button"
+                onClick={closeAnalyst}
+                style={{
+                  background: 'var(--brand-forest)',
+                  color: 'white',
+                  padding: '9px 20px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                }}
+              >
+                Browse Catalog
+              </button>
+            </div>
+          )}
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={closeAnalyst}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    background: '#334155',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  Keep Cart As Is
-                </button>
+          {/* Full Analysis Content */}
+          {!isCartEmpty && !loading && report && (
+            <>
+              {/* 1. Expenditure Breakdown */}
+              <section
+                style={{
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px 18px',
+                }}
+                aria-label="Budget Analysis"
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={16} color="var(--brand-forest)" />
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>Expenditure Breakdown</span>
+                  </div>
 
-                <button
-                  onClick={handleApplyChanges}
-                  disabled={applying || liveCalculation.count === 0}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Budget:</span>
+                    <div className="budget-input-wrapper" style={{ width: '100px' }}>
+                      <span className="budget-currency-symbol">₹</span>
+                      <input
+                        type="number"
+                        min="1"
+                        className="budget-input"
+                        style={{ width: '100%', padding: '5px 8px 5px 22px', fontSize: '0.85rem' }}
+                        value={budget}
+                        onChange={(e) => updateBudget(e.target.value)}
+                        aria-label="Shopping budget"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="budget-progress-container" style={{ height: '7px', marginBottom: '12px' }}>
+                  <div
+                    className="budget-progress-bar"
+                    style={{
+                      width: `${Math.min(100, Math.round((currentTotal / budgetNum) * 100))}%`,
+                      backgroundColor: currentTotal > budgetNum ? 'var(--danger)' : currentTotal > budgetNum * 0.85 ? 'var(--accent-amber)' : 'var(--brand-forest)',
+                    }}
+                  />
+                </div>
+
+                {/* Stat Tiles */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' }}>
+                  <div style={{ background: 'white', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block' }}>Current Total</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{currentTotal.toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ background: 'white', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block' }}>Core Essentials</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--brand-forest)' }}>₹{Number(report.essentialSubtotal).toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ background: 'white', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block' }}>Optional / Treats</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-amber)' }}>₹{Number(report.optionalSubtotal).toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ background: 'white', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block' }}>Budget Delta</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: report.overBudget ? 'var(--danger)' : 'var(--brand-forest)' }}>
+                      {report.overBudget ? `+₹${Number(report.budgetDifference).toFixed(2)} Over` : `₹${(budgetNum - currentTotal).toFixed(2)} Left`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Plain-English Assessment */}
+                <div
                   style={{
-                    background: liveCalculation.count === 0 ? '#475569' : '#10b981',
-                    color: 'white',
-                    padding: '10px 22px',
-                    borderRadius: '8px',
-                    fontWeight: 800,
-                    fontSize: '0.95rem',
+                    marginTop: '12px',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: report.overBudget ? 'var(--danger-light)' : 'var(--brand-surface)',
+                    border: report.overBudget ? '1px solid var(--danger-border)' : '1px solid var(--brand-border)',
+                    color: report.overBudget ? 'var(--danger)' : 'var(--brand-forest)',
+                    fontSize: '0.85rem',
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     gap: '8px',
-                    cursor: liveCalculation.count === 0 ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
                   }}
                 >
-                  {applying ? (
-                    <>
-                      <RefreshCw size={16} className="animate-spin" /> Applying...
-                    </>
-                  ) : (
-                    <>
-                      Apply {liveCalculation.count} Changes <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
+                  {report.overBudget ? <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} /> : <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: '2px' }} />}
+                  <div>
+                    <strong>Summary: </strong>
+                    <span>{report.summaryMessage}</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* 2. Categorization Review with Manual Overrides */}
+              <section aria-label="Cart Categorization">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Cart Categorization & Manual Review
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Tap pill to override status
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                  {/* Essentials Column */}
+                  <div style={{ background: 'var(--brand-surface)', border: '1px solid var(--brand-border)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--brand-forest)', fontWeight: 700, fontSize: '0.85rem' }}>
+                      <ShieldCheck size={15} /> Core Essentials ({report.essentialItemCount})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                      {report.items.filter((i) => i.essential).length === 0 ? (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No items marked as essential.</span>
+                      ) : (
+                        report.items.filter((i) => i.essential).map((item) => (
+                          <div key={item.productId} style={{ background: 'white', border: '1px solid var(--brand-border)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-forest)' }}>{item.productName}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Qty: {item.quantity} • ₹{Number(item.subtotal).toFixed(2)}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleEssential(item.productId, true)}
+                              title="Click to classify as optional"
+                              style={{ fontSize: '0.7rem', background: 'var(--brand-surface)', color: 'var(--brand-forest)', padding: '2px 7px', borderRadius: 'var(--radius-full)', fontWeight: 700, border: '1px solid var(--brand-border)' }}
+                            >
+                              Essential ⇄
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Optional Column */}
+                  <div style={{ background: 'var(--accent-amber-light)', border: '1px solid var(--accent-amber-border)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--accent-amber)', fontWeight: 700, fontSize: '0.85rem' }}>
+                      <Coffee size={15} /> Discretionary / Optional ({report.optionalItemCount})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                      {report.items.filter((i) => !i.essential).length === 0 ? (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No items marked as optional.</span>
+                      ) : (
+                        report.items.filter((i) => !i.essential).map((item) => (
+                          <div key={item.productId} style={{ background: 'white', border: '1px solid var(--accent-amber-border)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-amber)' }}>{item.productName}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Qty: {item.quantity} • ₹{Number(item.subtotal).toFixed(2)}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleEssential(item.productId, false)}
+                              title="Click to protect as essential"
+                              style={{ fontSize: '0.7rem', background: 'var(--accent-amber-light)', color: 'var(--accent-amber)', padding: '2px 7px', borderRadius: 'var(--radius-full)', fontWeight: 700, border: '1px solid var(--accent-amber-border)' }}
+                            >
+                              Optional ⇄
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 3. Proposed Recommendations Plan */}
+              <section aria-label="Optimization Recommendations">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Proposed Optimizations ({report.recommendedActions.length})
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      style={{ fontSize: '0.76rem', color: 'var(--brand-forest)', background: 'var(--brand-surface)', padding: '4px 9px', borderRadius: 'var(--radius-xs)', fontWeight: 700, border: '1px solid var(--brand-border)' }}
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      style={{ fontSize: '0.76rem', color: 'var(--text-muted)', background: 'var(--bg-subtle)', padding: '4px 9px', borderRadius: 'var(--radius-xs)', fontWeight: 600, border: '1px solid var(--border)' }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {report.recommendedActions.length === 0 ? (
+                  <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <CheckCircle2 size={28} color="var(--brand-forest)" style={{ margin: '0 auto 6px' }} />
+                    <p style={{ fontWeight: 700, color: 'var(--text-main)' }}>Cart Already Optimized!</p>
+                    <p style={{ fontSize: '0.82rem' }}>No further substitute swaps or item reductions needed.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+                    {report.recommendedActions.map((action) => {
+                      const isChecked = selectedActionIds.has(action.id);
+                      return (
+                        <div
+                          key={action.id}
+                          onClick={() => handleToggleAction(action.id)}
+                          style={{
+                            background: isChecked ? 'var(--brand-surface)' : 'white',
+                            border: isChecked ? '1.5px solid var(--brand-forest)' : '1px solid var(--border)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '10px 12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            transition: 'var(--transition-fast)',
+                          }}
+                        >
+                          <div style={{ color: isChecked ? 'var(--brand-forest)' : 'var(--text-subtle)' }}>
+                            {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
+                          </div>
+
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  padding: '1px 6px',
+                                  borderRadius: 'var(--radius-xs)',
+                                  background: action.actionType === 'REPLACE' ? '#eff6ff' : action.actionType === 'REDUCE_QUANTITY' ? 'var(--accent-amber-light)' : 'var(--danger-light)',
+                                  color: action.actionType === 'REPLACE' ? '#1d4ed8' : action.actionType === 'REDUCE_QUANTITY' ? 'var(--accent-amber)' : 'var(--danger)',
+                                }}
+                              >
+                                {action.actionType === 'REPLACE' ? 'Swap Option' : action.actionType === 'REDUCE_QUANTITY' ? 'Reduce Qty' : 'Remove Item'}
+                              </span>
+                              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>{action.label}</span>
+                            </div>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {action.reason}
+                            </p>
+                          </div>
+
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--brand-forest)' }}>
+                              -₹{Number(action.estimatedSavings).toFixed(2)}
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Save</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+
+        {/* Drawer Sticky Footer with Live Calculation & Actions */}
+        {!isCartEmpty && !loading && report && (
+          <div className="analyst-drawer-footer">
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                Projected Total ({liveCalculation.count} selected)
               </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '2px' }}>
+                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  ₹{liveCalculation.projectedTotal.toFixed(2)}
+                </span>
+                {liveCalculation.savings > 0 && (
+                  <span style={{ color: 'var(--brand-forest)', fontSize: '0.85rem', fontWeight: 700 }}>
+                    (Save ₹{liveCalculation.savings.toFixed(2)})
+                  </span>
+                )}
+                {liveCalculation.projectedTotal <= budgetNum && (
+                  <span style={{ background: 'var(--brand-surface)', color: 'var(--brand-forest)', border: '1px solid var(--brand-border)', fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 'var(--radius-full)' }}>
+                    ✓ In Budget
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={closeAnalyst}
+                style={{
+                  padding: '9px 14px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'white',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-main)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                }}
+              >
+                Keep Current Cart
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(true)}
+                disabled={applying || liveCalculation.count === 0}
+                style={{
+                  background: liveCalculation.count === 0 ? 'var(--border)' : 'var(--brand-forest)',
+                  color: liveCalculation.count === 0 ? 'var(--text-subtle)' : 'white',
+                  padding: '9px 18px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: liveCalculation.count === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Review & Apply ({liveCalculation.count}) <ArrowRight size={15} />
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Review & Final Confirmation Modal (Guarantees user verification before apply) */}
+      {showConfirmModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowConfirmModal(false)}
+          style={{ zIndex: 130 }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '480px', padding: '24px' }}
+          >
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                Confirm Cart Optimizations
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowConfirmModal(false)}
+                aria-label="Close review dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+              Review the selected changes below. No substitutions will take effect until confirmed:
+            </p>
+
+            <div style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', padding: '12px', marginBottom: '16px', maxHeight: '180px', overflowY: 'auto' }}>
+              {report?.recommendedActions
+                ?.filter((a) => selectedActionIds.has(a.id))
+                .map((a) => (
+                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.84rem' }}>
+                    <span>{a.label}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--brand-forest)' }}>Save ₹{Number(a.estimatedSavings).toFixed(2)}</span>
+                  </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', fontSize: '0.92rem' }}>
+              <span>Projected Cart Total:</span>
+              <strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>₹{liveCalculation.projectedTotal.toFixed(2)}</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'white',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-main)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                }}
+              >
+                Back to Edit
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmAndApply}
+                disabled={applying}
+                style={{
+                  background: 'var(--brand-forest)',
+                  color: 'white',
+                  padding: '8px 18px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {applying ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" /> Applying...
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} /> Confirm & Apply
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

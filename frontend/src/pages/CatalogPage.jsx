@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Sparkles, Filter, RefreshCw, ShoppingBag } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Sparkles, Filter, RefreshCw, ShoppingBag, X, ShieldCheck, Truck, Leaf } from 'lucide-react';
 import apiClient from '../api/client';
 import ProductCard from '../components/ProductCard';
 import AlternativeModal from '../components/AlternativeModal';
@@ -56,47 +56,80 @@ const CatalogPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchProducts();
-    }, 250);
+    }, 200);
     return () => clearTimeout(timer);
   }, [selectedCategory, searchTerm, sortBy]);
 
+  const handleClearFilters = () => {
+    setSelectedCategory('All');
+    setSearchTerm('');
+    setSortBy('name');
+  };
+
   return (
-    <div>
-      {/* Hero Header */}
-      <section className="hero-section">
+    <main>
+      {/* Supermarket Welcome Banner */}
+      <section className="hero-section" aria-label="Store Highlights">
         <div className="container hero-content">
           <div className="hero-tag">
-            <Sparkles size={16} /> AI-Powered Grocery Shopping
+            <Sparkles size={14} aria-hidden="true" />
+            <span>FreshCart Direct Mandi</span>
           </div>
           <h1 className="hero-title">
-            Smart Savings on Everyday Groceries
+            Fresh Everyday Groceries, Smarter Cart Savings
           </h1>
           <p className="hero-desc">
-            Shop farm-fresh dairy, pantry staples, and household essentials with real-time budget tracking and instant AI cheaper alternatives.
+            Directly sourced staples, dairy & pantry essentials with live budget tracking and instant verified savings.
           </p>
+
+          <div className="hero-badges-row">
+            <div className="hero-badge-item">
+              <Leaf size={15} aria-hidden="true" />
+              <span>100% Quality Assured</span>
+            </div>
+            <div className="hero-badge-item">
+              <Truck size={15} aria-hidden="true" />
+              <span>30-Min Fast Delivery</span>
+            </div>
+            <div className="hero-badge-item">
+              <ShieldCheck size={15} aria-hidden="true" />
+              <span>Staples Price Guarantee</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <div className="container">
-        {/* Budget Bar */}
+        {/* Budget Tracker Banner */}
         <BudgetBanner />
 
-        {/* Filter & Search Bar */}
-        <div className="controls-bar">
+        {/* Search, Filter & Sort Bar */}
+        <div className="controls-bar" role="search" aria-label="Product Search and Filters">
           <div className="search-and-sort">
             <div className="search-box">
-              <Search size={18} />
+              <Search size={17} aria-hidden="true" />
               <input
                 type="text"
                 className="search-input"
-                placeholder="Search 20+ fresh items (e.g. Milk, Rice, Oil, Tea)..."
+                placeholder="Search fresh groceries (e.g. Milk, Rice, Oil, Tea)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search products"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  className="search-clear-btn"
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search query"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <label htmlFor="sort-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#64748b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label htmlFor="sort-select" style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                 Sort:
               </label>
               <select
@@ -104,18 +137,21 @@ const CatalogPage = () => {
                 className="sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort products by"
               >
-                <option value="name">Name (A - Z)</option>
+                <option value="name">Name (A – Z)</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
               </select>
             </div>
           </div>
 
-          <div className="categories-pills">
+          <div className="categories-pills" role="tablist" aria-label="Filter by Category">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
+                role="tab"
+                aria-selected={selectedCategory === cat}
                 className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
@@ -125,60 +161,94 @@ const CatalogPage = () => {
           </div>
         </div>
 
-        {/* Products Grid */}
+        {/* Products Grid / State Handling */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-            <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontWeight: 600 }}>Loading fresh products from supermarket inventory...</p>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }} role="status">
+            <RefreshCw size={26} className="animate-spin" style={{ margin: '0 auto 12px', color: 'var(--brand-forest)' }} />
+            <p style={{ fontWeight: 600 }}>Loading inventory items...</p>
           </div>
         ) : error ? (
-          <div style={{ textAlign: 'center', padding: '40px', background: '#fee2e2', borderRadius: '12px', color: '#991b1b', marginBottom: '32px' }}>
-            <p style={{ fontWeight: 700 }}>{error}</p>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '36px',
+              background: 'var(--danger-light)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--danger-border)',
+              color: 'var(--danger)',
+              marginBottom: '32px',
+            }}
+            role="alert"
+          >
+            <p style={{ fontWeight: 700, marginBottom: '8px' }}>{error}</p>
             <button
               onClick={fetchProducts}
-              style={{ marginTop: '12px', background: '#dc2626', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
+              style={{
+                marginTop: '10px',
+                background: 'var(--danger)',
+                color: 'white',
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+              }}
             >
               Retry
             </button>
           </div>
         ) : products.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '40px' }}>
-            <ShoppingBag size={48} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>No products found</h3>
-            <p style={{ color: '#64748b', fontSize: '0.95rem' }}>
-              No items match your selected filters. Try searching for something else or clear the category filter.
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '60px 20px',
+              background: 'white',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              marginBottom: '40px',
+            }}
+          >
+            <ShoppingBag size={44} color="var(--text-subtle)" style={{ margin: '0 auto 14px' }} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+              No matching grocery items found
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', maxWidth: '420px', margin: '0 auto 18px' }}>
+              We couldn't find items matching your current filters. Try searching with a different term or resetting category filters.
             </p>
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('All');
+              onClick={handleClearFilters}
+              style={{
+                background: 'var(--brand-forest)',
+                color: 'white',
+                padding: '9px 18px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 700,
+                fontSize: '0.88rem',
               }}
-              style={{ marginTop: '16px', background: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
             >
-              Reset Filters
+              Reset All Filters
             </button>
           </div>
         ) : (
-          <div className="products-grid">
+          <div className="products-grid" aria-label="Product Catalog Grid">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                onSelectAlternative={(p) => setSelectedProductForAlt(p)}
+                onSelectAlternative={(prod) => setSelectedProductForAlt(prod)}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Alternative Modal */}
+      {/* Cheaper Alternative Modal */}
       {selectedProductForAlt && (
         <AlternativeModal
           product={selectedProductForAlt}
           onClose={() => setSelectedProductForAlt(null)}
         />
       )}
-    </div>
+    </main>
   );
 };
 

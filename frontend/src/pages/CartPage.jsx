@@ -9,9 +9,10 @@ import {
   Sparkles,
   TrendingDown,
   AlertTriangle,
-  CheckCircle,
-  RefreshCw,
+  CheckCircle2,
   Bot,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import apiClient from '../api/client';
@@ -42,37 +43,45 @@ const CartPage = () => {
   }, [cart.totalItems]);
 
   const handleSwapToCheaper = async (originalProductId, alternativeProductId) => {
-    // 1. Remove original
     await removeFromCart(originalProductId);
-    // 2. Add alternative
     await addToCart(alternativeProductId, 1);
   };
 
   const hasItems = cart.items && cart.items.length > 0;
 
   return (
-    <div className="container" style={{ paddingTop: '28px' }}>
-      <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '20px' }}>
-        Your Shopping Cart
-      </h1>
+    <main className="container" style={{ paddingTop: '28px', marginBottom: '60px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
+          Your Supermarket Cart
+        </h1>
+        {hasItems && (
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'} in basket
+          </span>
+        )}
+      </div>
 
       <BudgetBanner />
 
       {!hasItems ? (
-        <div
+        <section
           style={{
             textAlign: 'center',
             padding: '70px 20px',
             background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e2e8f0',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)',
             marginBottom: '40px',
           }}
+          aria-label="Empty Cart"
         >
-          <ShoppingBag size={56} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px' }}>Your cart is empty</h2>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>
-            Explore our wide range of groceries and essentials with smart budget savings!
+          <ShoppingBag size={56} color="var(--text-subtle)" style={{ margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-main)' }}>
+            Your cart is empty
+          </h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px', maxWidth: '420px', margin: '0 auto 24px' }}>
+            Explore fresh vegetables, dairy, pantry staples, and household products with instant budget tracking.
           </p>
           <Link
             to="/"
@@ -80,42 +89,45 @@ const CartPage = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: '#059669',
+              background: 'var(--brand-forest)',
               color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
+              padding: '11px 24px',
+              borderRadius: 'var(--radius-sm)',
               fontWeight: 700,
+              fontSize: '0.92rem',
             }}
           >
-            Start Shopping <ArrowRight size={18} />
+            Start Shopping <ArrowRight size={17} />
           </Link>
-        </div>
+        </section>
       ) : (
         <div className="cart-layout">
           {/* Items Section */}
-          <div className="cart-items-card">
+          <section className="cart-items-card" aria-label="Cart Items">
             <div className="cart-header">
-              <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
                 Cart Items ({cart.totalItems})
               </span>
               <button
+                type="button"
                 onClick={clearCart}
                 style={{
-                  color: '#dc2626',
+                  color: 'var(--danger)',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
                 }}
+                aria-label="Clear all items from cart"
               >
                 <Trash2 size={15} /> Clear All
               </button>
             </div>
 
-            <div className="cart-items-list">
+            <div className="cart-items-list" role="list">
               {cart.items.map((item) => (
-                <div key={item.id} className="cart-item-row">
+                <div key={item.id} className="cart-item-row" role="listitem">
                   <div className="cart-item-info">
                     <img
                       src={item.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80'}
@@ -125,25 +137,29 @@ const CartPage = () => {
                     <div className="cart-item-details">
                       <h4>{item.productName}</h4>
                       <p>
-                        Category: {item.category} • ₹{Number(item.unitPrice).toFixed(2)} each
+                        {item.category} • ₹{Number(item.unitPrice).toFixed(2)} each
                       </p>
                     </div>
                   </div>
 
-                  <div className="cart-qty-controls">
+                  <div className="cart-qty-controls" aria-label={`Quantity for ${item.productName}`}>
                     <button
+                      type="button"
                       className="cart-qty-btn"
                       onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                       disabled={loading}
+                      aria-label={`Decrease quantity of ${item.productName}`}
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="cart-qty-num">{item.quantity}</span>
+                    <span className="cart-qty-num" aria-live="polite">{item.quantity}</span>
                     <button
+                      type="button"
                       className="cart-qty-btn"
                       onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                       disabled={loading || item.quantity >= item.availableStock}
                       title={item.quantity >= item.availableStock ? 'Max stock reached' : ''}
+                      aria-label={`Increase quantity of ${item.productName}`}
                     >
                       <Plus size={14} />
                     </button>
@@ -154,12 +170,14 @@ const CartPage = () => {
                   </div>
 
                   <button
+                    type="button"
                     className="cart-remove-btn"
                     onClick={() => removeFromCart(item.productId)}
                     disabled={loading}
                     title="Remove item"
+                    aria-label={`Remove ${item.productName} from cart`}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={17} />
                   </button>
                 </div>
               ))}
@@ -167,15 +185,23 @@ const CartPage = () => {
 
             {/* Smart Cheaper Alternatives in Cart */}
             {budgetResult && budgetResult.suggestedAlternatives && budgetResult.suggestedAlternatives.length > 0 && (
-              <div style={{ marginTop: '28px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <Sparkles size={20} color="#059669" />
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534' }}>
-                    AI Money-Saving Swaps for Your Cart
+              <div
+                style={{
+                  marginTop: '28px',
+                  background: 'var(--brand-surface)',
+                  border: '1px solid var(--brand-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px 20px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <Sparkles size={18} color="var(--brand-forest)" />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--brand-forest)' }}>
+                    Smart Money-Saving Substitutes
                   </h3>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#15803d', marginBottom: '14px' }}>
-                  Swap high-cost cart items with these verified cheaper alternatives to reduce your bill:
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                  Swap high-cost items with verified economical substitutes in the same category:
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -184,9 +210,9 @@ const CartPage = () => {
                       key={alt.alternativeProductId}
                       style={{
                         background: 'white',
-                        border: '1px solid #dcfce7',
-                        borderRadius: '8px',
-                        padding: '12px',
+                        border: '1px solid var(--brand-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '12px 14px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -195,21 +221,22 @@ const CartPage = () => {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                          Swap with: <span style={{ color: '#059669' }}>{alt.alternativeProductName}</span> (₹{Number(alt.alternativePrice).toFixed(2)})
+                        <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                          Swap with: <strong style={{ color: 'var(--brand-forest)' }}>{alt.alternativeProductName}</strong> (₹{Number(alt.alternativePrice).toFixed(2)})
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          Original: {alt.originalProductName} (₹{Number(alt.originalPrice).toFixed(2)}) • <strong>Save ₹{Number(alt.savingsAmount).toFixed(2)} ({alt.savingsPercentage}%)</strong>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          Original: {alt.originalProductName} (₹{Number(alt.originalPrice).toFixed(2)}) • <span style={{ color: 'var(--accent-amber)', fontWeight: 700 }}>Save ₹{Number(alt.savingsAmount).toFixed(2)} ({alt.savingsPercentage}%)</span>
                         </div>
                       </div>
 
                       <button
+                        type="button"
                         onClick={() => handleSwapToCheaper(alt.originalProductId, alt.alternativeProductId)}
                         style={{
-                          background: '#059669',
+                          background: 'var(--brand-forest)',
                           color: 'white',
                           padding: '6px 12px',
-                          borderRadius: '6px',
+                          borderRadius: 'var(--radius-sm)',
                           fontSize: '0.82rem',
                           fontWeight: 700,
                           display: 'flex',
@@ -217,33 +244,33 @@ const CartPage = () => {
                           gap: '6px',
                         }}
                       >
-                        <TrendingDown size={14} /> 1-Click Swap
+                        <TrendingDown size={14} /> Swap & Save
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
+          </section>
 
           {/* Order Summary Sidebar */}
-          <div className="order-summary-card">
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px' }}>
+          <aside className="order-summary-card" aria-label="Order Summary">
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '14px', color: 'var(--text-main)' }}>
               Order Summary
-            </h3>
+            </h2>
 
             <div className="summary-row">
-              <span>Items Total:</span>
+              <span>Items Subtotal:</span>
               <span>₹{Number(cart.subtotal || 0).toFixed(2)}</span>
             </div>
 
             <div className="summary-row">
-              <span>Delivery Fee:</span>
-              <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
+              <span>Express Delivery:</span>
+              <span style={{ color: 'var(--brand-forest)', fontWeight: 700 }}>FREE</span>
             </div>
 
             <div className="summary-row">
-              <span>GST & Taxes:</span>
+              <span>GST & Packaging:</span>
               <span>₹0.00</span>
             </div>
 
@@ -253,56 +280,60 @@ const CartPage = () => {
             </div>
 
             <button
+              type="button"
               onClick={openAnalyst}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
-                color: 'white',
-                padding: '12px',
-                borderRadius: '8px',
-                fontSize: '0.95rem',
+                background: 'var(--accent-amber-light)',
+                border: '1px solid var(--accent-amber-border)',
+                color: 'var(--accent-amber)',
+                padding: '11px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.9rem',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 marginTop: '16px',
-                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
                 cursor: 'pointer',
               }}
               title="Open FreshCart AI Shopping Analyst"
             >
-              <Bot size={18} /> AI Analyse My Cart
+              <Bot size={17} /> Run AI Cart Optimization
             </button>
 
             <button
+              type="button"
               className="btn-checkout"
               onClick={() => navigate('/checkout')}
               disabled={loading}
+              aria-label="Proceed to Checkout"
             >
-              Proceed to Checkout <ArrowRight size={18} />
+              <span>Proceed to Checkout</span>
+              <ArrowRight size={17} />
             </button>
 
             <div style={{ marginTop: '16px', textAlign: 'center' }}>
-              <Link to="/" style={{ fontSize: '0.88rem', color: '#059669', fontWeight: 600 }}>
+              <Link to="/" style={{ fontSize: '0.88rem', color: 'var(--brand-forest)', fontWeight: 600 }}>
                 ← Continue Shopping
               </Link>
             </div>
-          </div>
+          </aside>
         </div>
       )}
 
       {/* Recommended Complementary Items */}
       {recommendations.length > 0 && (
-        <section style={{ marginTop: '48px', marginBottom: '60px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
-            <Sparkles size={22} color="#059669" />
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>
-              AI Complementary Recommendations
+        <section style={{ marginTop: '40px', marginBottom: '40px' }} aria-label="Recommended Groceries">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Sparkles size={20} color="var(--brand-forest)" />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Recommended Add-ons
             </h2>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>
-            Frequently paired items based on your current cart selection.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>
+            Frequently paired items based on your current cart selection:
           </p>
 
           <div className="products-grid">
@@ -311,35 +342,39 @@ const CartPage = () => {
                 key={prod.id}
                 style={{
                   background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px',
+                  gap: '8px',
+                  boxShadow: 'var(--shadow-xs)',
                 }}
               >
                 <img
                   src={prod.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80'}
                   alt={prod.name}
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }}
+                  style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }}
+                  loading="lazy"
                 />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                   {prod.category}
                 </span>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>{prod.name}</h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                  <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>₹{Number(prod.price).toFixed(2)}</span>
+                <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>{prod.name}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>₹{Number(prod.price).toFixed(2)}</span>
                   <button
+                    type="button"
                     onClick={() => addToCart(prod.id, 1)}
                     style={{
-                      background: '#059669',
+                      background: 'var(--brand-forest)',
                       color: 'white',
                       padding: '6px 12px',
-                      borderRadius: '6px',
+                      borderRadius: 'var(--radius-sm)',
                       fontSize: '0.82rem',
                       fontWeight: 700,
                     }}
+                    aria-label={`Add ${prod.name} to cart`}
                   >
                     + Add
                   </button>
@@ -349,7 +384,7 @@ const CartPage = () => {
           </div>
         </section>
       )}
-    </div>
+    </main>
   );
 };
 

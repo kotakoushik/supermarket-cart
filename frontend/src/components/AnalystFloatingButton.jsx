@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const AnalystFloatingButton = () => {
@@ -7,17 +7,20 @@ const AnalystFloatingButton = () => {
 
   return (
     <button
+      type="button"
       className="floating-analyst-btn"
       onClick={openAnalyst}
-      aria-label="AI Analyse My Cart"
-      title="Open FreshCart AI Shopping Analyst"
+      aria-label={`Open AI Shopping Analyst (${cart.totalItems || 0} items in cart)`}
+      title="Open FreshCart AI Shopping Analyst for budget audit"
     >
-      <div className="floating-analyst-icon-wrapper">
-        <Bot size={22} />
+      <div className="floating-analyst-icon-wrapper" aria-hidden="true">
+        <Bot size={20} />
       </div>
-      <span className="floating-analyst-text">AI Analyse My Cart</span>
+      <span className="floating-analyst-text">AI Shopping Analyst</span>
       {cart.totalItems > 0 && (
-        <span className="floating-analyst-badge">{cart.totalItems}</span>
+        <span className="floating-analyst-badge" aria-label={`${cart.totalItems} items in cart`}>
+          {cart.totalItems}
+        </span>
       )}
     </button>
   );

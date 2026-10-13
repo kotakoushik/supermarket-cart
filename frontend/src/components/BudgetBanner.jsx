@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, AlertTriangle, CheckCircle, TrendingUp, Bot } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, TrendingUp, Bot } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const BudgetBanner = () => {
@@ -11,28 +11,29 @@ const BudgetBanner = () => {
   const percentage = budgetVal > 0 ? Math.min(Math.round((total / budgetVal) * 100), 100) : 0;
   const isOver = budgetVal > 0 && total > budgetVal;
   const overAmount = isOver ? (total - budgetVal).toFixed(2) : 0;
+  const remainingAmount = !isOver && budgetVal > 0 ? (budgetVal - total).toFixed(2) : 0;
 
   const getBarColor = () => {
-    if (isOver) return '#ef4444';
-    if (percentage > 85) return '#f59e0b';
-    return '#10b981';
+    if (isOver) return 'var(--danger)';
+    if (percentage > 85) return 'var(--accent-amber)';
+    return 'var(--brand-forest)';
   };
 
   return (
-    <div className="budget-widget">
+    <section className="budget-widget" aria-label="Budget Tracker">
       <div className="budget-widget-header">
         <div className="budget-title-group">
-          <TrendingUp size={22} color={isOver ? '#ef4444' : '#059669'} />
+          <div className="budget-icon-wrap" aria-hidden="true">
+            <TrendingUp size={20} />
+          </div>
           <div>
             <h3>Smart Grocery Budget Tracker</h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
-              Real-time expenditure monitoring & AI over-budget protection
-            </p>
+            <p>Real-time expenditure monitoring & automated savings guidance</p>
           </div>
         </div>
 
         <div className="budget-inputs">
-          <label htmlFor="budget-input" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569' }}>
+          <label htmlFor="budget-input" style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-muted)' }}>
             My Budget:
           </label>
           <div className="budget-input-wrapper">
@@ -46,32 +47,32 @@ const BudgetBanner = () => {
               value={budget}
               onChange={(e) => updateBudget(e.target.value)}
               placeholder="1000"
+              aria-label="Target Grocery Budget in Rupees"
             />
           </div>
 
           <button
+            type="button"
             onClick={openAnalyst}
-            style={{
-              background: '#059669',
-              color: 'white',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
-              cursor: 'pointer',
-            }}
-            title="Open AI Shopping Analyst"
+            className="nav-analyst-pill"
+            style={{ cursor: 'pointer' }}
+            title="Open AI Shopping Analyst for in-depth cart review"
+            aria-label="Open AI Shopping Analyst"
           >
-            <Bot size={16} /> AI Analyse
+            <Bot size={15} />
+            <span>AI Audit</span>
           </button>
         </div>
       </div>
 
-      <div className="budget-progress-container">
+      <div
+        className="budget-progress-container"
+        role="progressbar"
+        aria-valuenow={percentage}
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-label={`Budget used: ${percentage}%`}
+      >
         <div
           className="budget-progress-bar"
           style={{
@@ -83,29 +84,35 @@ const BudgetBanner = () => {
 
       <div className="budget-stats">
         <span>Cart: <strong>₹{total.toFixed(2)}</strong></span>
-        <span>Utilization: <strong>{budgetVal > 0 ? ((total / budgetVal) * 100).toFixed(1) : 0}%</strong></span>
+        <span>
+          {isOver ? (
+            <span style={{ color: 'var(--danger)' }}>Exceeded by ₹{overAmount}</span>
+          ) : (
+            <span style={{ color: 'var(--brand-forest)' }}>₹{remainingAmount} Remaining</span>
+          )}
+        </span>
         <span>Target: <strong>₹{budgetVal.toFixed(2)}</strong></span>
       </div>
 
       {budgetResult && isOver && (
-        <div className="budget-warning-banner alert">
-          <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div className="budget-warning-banner alert" role="alert">
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px' }} aria-hidden="true" />
           <div>
-            <strong>Budget Exceeded by ₹{overAmount}!</strong>
+            <strong>Budget Exceeded by ₹{overAmount}</strong>
             <p style={{ marginTop: '2px' }}>{budgetResult.statusMessage}</p>
           </div>
         </div>
       )}
 
       {budgetResult && !isOver && budgetVal > 0 && (
-        <div className="budget-warning-banner success">
-          <CheckCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div className="budget-warning-banner success" role="status">
+          <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} aria-hidden="true" />
           <div>
             <strong>Within Budget:</strong> {budgetResult.statusMessage}
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

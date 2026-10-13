@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle, Key, Lock, Unlock, LogOut } from 'lucide-react';
+import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle, Key, Lock, Unlock, LogOut, Search } from 'lucide-react';
 import apiClient from '../api/client';
 import { useCart } from '../context/CartContext';
 
@@ -27,6 +27,9 @@ const AdminPage = () => {
   const [verifying, setVerifying] = useState(false);
   const [authError, setAuthError] = useState(null);
 
+  // Search filter for admin inventory
+  const [adminSearch, setAdminSearch] = useState('');
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -40,6 +43,17 @@ const AdminPage = () => {
     active: true,
   });
   const [saving, setSaving] = useState(false);
+
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
 
   const fetchProducts = async () => {
     try {
@@ -187,52 +201,63 @@ const AdminPage = () => {
     }
   };
 
+  const filteredProducts = products.filter((p) => {
+    if (!adminSearch.trim()) return true;
+    const term = adminSearch.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(term) ||
+      p.category.toLowerCase().includes(term) ||
+      String(p.id).includes(term)
+    );
+  });
+
   if (!isUnlocked) {
     return (
-      <div className="container" style={{ paddingTop: '60px', marginBottom: '80px', maxWidth: '520px' }}>
+      <main className="container" style={{ paddingTop: '60px', marginBottom: '80px', maxWidth: '480px' }}>
         <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
-          borderRadius: '20px',
+          borderRadius: 'var(--radius-lg)',
           padding: '36px',
-          boxShadow: 'var(--shadow-md)',
+          boxShadow: 'var(--shadow-sm)',
           textAlign: 'center'
         }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
-            background: 'rgba(5, 150, 105, 0.1)',
-            color: 'var(--primary)',
+            width: '52px',
+            height: '52px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--brand-surface)',
+            color: 'var(--brand-forest)',
+            border: '1px solid var(--brand-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 16px'
-          }}>
-            <Lock size={28} />
+          }} aria-hidden="true">
+            <Lock size={26} />
           </div>
 
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)' }}>
             Protected Admin Portal
           </h1>
-          <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '24px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '22px' }}>
             Authentication is required to view, modify prices, and manage supermarket inventory.
           </p>
 
           {authError && (
             <div style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#991b1b',
-              padding: '12px 16px',
-              borderRadius: '10px',
-              fontSize: '0.88rem',
-              marginBottom: '20px',
+              background: 'var(--danger-light)',
+              border: '1px solid var(--danger-border)',
+              color: 'var(--danger)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.86rem',
+              marginBottom: '18px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               textAlign: 'left'
-            }}>
+            }} role="alert">
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
               <span>{authError}</span>
             </div>
@@ -240,26 +265,19 @@ const AdminPage = () => {
 
           <form onSubmit={handleUnlock}>
             <div style={{ marginBottom: '18px', textAlign: 'left' }}>
-              <label htmlFor="adminKeyInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+              <label htmlFor="adminKeyInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
                 Admin Access Key
               </label>
               <div style={{ position: 'relative' }}>
-                <Key size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Key size={17} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   id="adminKeyInput"
                   type="password"
                   value={adminKey}
                   onChange={(e) => setAdminKey(e.target.value)}
                   placeholder="Enter admin security key..."
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 42px',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '10px',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    transition: 'all 0.2s',
-                  }}
+                  className="form-control"
+                  style={{ paddingLeft: '38px' }}
                   required
                 />
               </div>
@@ -268,103 +286,107 @@ const AdminPage = () => {
             <button
               type="submit"
               disabled={verifying}
-              style={{
-                width: '100%',
-                background: 'var(--primary)',
-                color: 'white',
-                padding: '13px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
-                transition: 'all 0.2s',
-              }}
+              className="btn-checkout"
+              style={{ marginTop: '0' }}
             >
               {verifying ? (
                 <>
-                  <RefreshCw size={18} className="animate-spin" /> Verifying Key...
+                  <RefreshCw size={17} className="animate-spin" /> Verifying Key...
                 </>
               ) : (
                 <>
-                  <Unlock size={18} /> Unlock Admin Portal
+                  <Unlock size={17} /> Unlock Admin Portal
                 </>
               )}
             </button>
           </form>
 
-          <div style={{ marginTop: '20px', padding: '12px', background: '#f8fafc', borderRadius: '10px', fontSize: '0.8rem', color: '#64748b' }}>
+          <div style={{ marginTop: '20px', padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <strong>Dev Default Key:</strong> <code>fc-admin-key-2025</code>
-            <br />
-            Configured on server via <code>FRESHCART_ADMIN_KEY</code>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="container" style={{ paddingTop: '28px', marginBottom: '60px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+    <main className="container" style={{ paddingTop: '28px', marginBottom: '60px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={24} color="#059669" />
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Admin Inventory Management</h1>
+            <ShieldCheck size={22} color="var(--brand-forest)" />
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>Inventory Management</h1>
           </div>
-          <p style={{ color: '#64748b', marginTop: '4px' }}>
-            Create new items, modify prices and stock, or toggle active/inactive status.
+          <p style={{ color: 'var(--text-muted)', marginTop: '4px', fontSize: '0.9rem' }}>
+            Live catalog control: adjust prices, replenish stock, or activate/deactivate products.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', color: '#059669', padding: '6px 14px', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>
-            <ShieldCheck size={16} /> Authenticated
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--brand-surface)', color: 'var(--brand-forest)', padding: '5px 12px', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: 700, border: '1px solid var(--brand-border)' }}>
+            <ShieldCheck size={15} /> Authorized
           </div>
+
           <button
+            type="button"
             onClick={handleLock}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              color: '#475569',
-              fontSize: '0.85rem',
+              padding: '7px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
+              background: 'white',
+              color: 'var(--text-muted)',
+              fontSize: '0.84rem',
               fontWeight: 600,
             }}
-            title="Lock admin session and clear credentials"
+            title="Lock session"
           >
-            <LogOut size={15} /> Lock
+            <LogOut size={14} /> Lock
           </button>
+
           <button
+            type="button"
             onClick={openAddModal}
             style={{
-              background: '#059669',
+              background: 'var(--brand-forest)',
               color: 'white',
-              padding: '10px 20px',
-              borderRadius: '8px',
+              padding: '9px 18px',
+              borderRadius: 'var(--radius-sm)',
               fontWeight: 700,
+              fontSize: '0.88rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
             }}
           >
-            <Plus size={18} /> Add New Product
+            <Plus size={17} /> Add Product
           </button>
         </div>
       </div>
 
+      {/* Quick Search */}
+      <div style={{ marginBottom: '18px', position: 'relative', maxWidth: '380px' }}>
+        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <input
+          type="text"
+          className="form-control"
+          style={{ paddingLeft: '36px' }}
+          placeholder="Filter inventory by name, category, or ID..."
+          value={adminSearch}
+          onChange={(e) => setAdminSearch(e.target.value)}
+        />
+      </div>
+
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-          <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px' }} />
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }} role="status">
+          <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px', color: 'var(--brand-forest)' }} />
           Loading inventory...
         </div>
       ) : error ? (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '16px', borderRadius: '12px' }}>
+        <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--danger-border)' }} role="alert">
           {error}
         </div>
       ) : (
@@ -382,35 +404,35 @@ const AdminPage = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id}>
-                  <td style={{ fontWeight: 700, color: '#64748b' }}>#{product.id}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--text-muted)' }}>#{product.id}</td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <img
                         src={product.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=80&q=80'}
                         alt={product.name}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }}
+                        style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)' }}
                       />
                       <div>
-                        <div style={{ fontWeight: 700 }}>{product.name}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                          {product.description?.substring(0, 40)}...
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{product.name}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          {product.description?.substring(0, 36)}...
                         </div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                       {product.category}
                     </span>
                   </td>
-                  <td style={{ fontWeight: 800 }}>₹{Number(product.price).toFixed(2)}</td>
+                  <td style={{ fontWeight: 800, color: 'var(--text-main)' }}>₹{Number(product.price).toFixed(2)}</td>
                   <td>
                     <span
                       style={{
                         fontWeight: 700,
-                        color: product.stockQuantity === 0 ? '#ef4444' : product.stockQuantity < 10 ? '#f59e0b' : '#059669',
+                        color: product.stockQuantity === 0 ? 'var(--danger)' : product.stockQuantity < 10 ? 'var(--accent-amber)' : 'var(--brand-forest)',
                       }}
                     >
                       {product.stockQuantity}
@@ -419,52 +441,57 @@ const AdminPage = () => {
                   <td>
                     <span
                       style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '20px',
-                        background: product.active ? '#dcfce7' : '#fee2e2',
-                        color: product.active ? '#15803d' : '#991b1b',
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        background: product.active ? 'var(--brand-surface)' : 'var(--danger-light)',
+                        color: product.active ? 'var(--brand-forest)' : 'var(--danger)',
+                        border: product.active ? '1px solid var(--brand-border)' : '1px solid var(--danger-border)',
                       }}
                     >
                       {product.active ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                       <button
+                        type="button"
                         onClick={() => openEditModal(product)}
                         style={{
-                          padding: '6px 10px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          color: '#0284c7',
+                          padding: '5px 10px',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-xs)',
+                          color: 'var(--brand-forest)',
+                          background: 'white',
                           fontWeight: 600,
-                          fontSize: '0.82rem',
+                          fontSize: '0.8rem',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
                         }}
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={13} /> Edit
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => handleToggleStatus(product.id, product.active)}
                         style={{
-                          padding: '6px 10px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          color: product.active ? '#dc2626' : '#16a34a',
+                          padding: '5px 10px',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-xs)',
+                          color: product.active ? 'var(--danger)' : 'var(--brand-forest)',
+                          background: 'white',
                           fontWeight: 600,
-                          fontSize: '0.82rem',
+                          fontSize: '0.8rem',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
                         }}
                         title={product.active ? 'Deactivate product' : 'Activate product'}
                       >
-                        <Power size={14} />
+                        <Power size={13} />
                         {product.active ? 'Deactivate' : 'Activate'}
                       </button>
                     </div>
@@ -478,14 +505,14 @@ const AdminPage = () => {
 
       {/* Modal for Add / Edit */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal} role="dialog" aria-modal="true">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                {editingProduct ? 'Edit Supermarket Item' : 'Add New Supermarket Item'}
               </h2>
-              <button className="modal-close-btn" onClick={closeModal}>
-                <X size={20} />
+              <button className="modal-close-btn" onClick={closeModal} aria-label="Close dialog">
+                <X size={18} />
               </button>
             </div>
 
@@ -517,7 +544,7 @@ const AdminPage = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
                   <label className="form-label" htmlFor="prodPrice">Price (₹) *</label>
                   <input
@@ -578,18 +605,18 @@ const AdminPage = () => {
                   type="checkbox"
                   checked={formData.active}
                   onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                  style={{ width: '18px', height: '18px', accentColor: '#059669' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--brand-forest)' }}
                 />
-                <label htmlFor="prodActive" style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                <label htmlFor="prodActive" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)' }}>
                   Active (Available for customer purchase)
                 </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
                 <button
                   type="button"
                   onClick={closeModal}
-                  style={{ padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 600 }}
+                  style={{ padding: '9px 16px', border: '1px solid var(--border)', background: 'white', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: '0.88rem' }}
                 >
                   Cancel
                 </button>
@@ -597,11 +624,12 @@ const AdminPage = () => {
                   type="submit"
                   disabled={saving}
                   style={{
-                    background: '#059669',
+                    background: 'var(--brand-forest)',
                     color: 'white',
-                    padding: '10px 20px',
-                    borderRadius: '8px',
+                    padding: '9px 18px',
+                    borderRadius: 'var(--radius-sm)',
                     fontWeight: 700,
+                    fontSize: '0.88rem',
                   }}
                 >
                   {saving ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
@@ -611,7 +639,7 @@ const AdminPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 };
 

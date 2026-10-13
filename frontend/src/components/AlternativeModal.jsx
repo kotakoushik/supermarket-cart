@@ -11,6 +11,16 @@ const AlternativeModal = ({ product, onClose }) => {
   const [addedId, setAddedId] = useState(null);
 
   useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     if (!product) return;
 
     const fetchAlternatives = async () => {
@@ -37,110 +47,120 @@ const AlternativeModal = ({ product, onClose }) => {
       setAddedId(altId);
       setTimeout(() => {
         onClose();
-      }, 1200);
+      }, 1000);
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="alt-modal-title"
+    >
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={20} color="#059669" />
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Smart AI Cheaper Alternative</h2>
+            <Sparkles size={18} color="var(--brand-forest)" aria-hidden="true" />
+            <h2 id="alt-modal-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Verified Economical Alternatives
+            </h2>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
-            <X size={20} />
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">
+            <X size={18} />
           </button>
         </div>
 
-        <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '12px', marginBottom: '20px' }}>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Comparing Against:</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-            <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{product.name}</span>
-            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>₹{Number(product.price).toFixed(2)}</span>
+        <div style={{ background: 'var(--bg-subtle)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: '18px', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Comparing Against:</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-main)' }}>{product.name}</span>
+            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>₹{Number(product.price).toFixed(2)}</span>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '36px 0', color: '#64748b' }}>
-            Analyzing cheaper alternatives in {product.category}...
+          <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)' }} role="status">
+            Analyzing cheaper active alternatives in {product.category}...
           </div>
         ) : error ? (
-          <div style={{ color: '#ef4444', padding: '20px', textAlign: 'center' }}>{error}</div>
+          <div style={{ color: 'var(--danger)', padding: '16px', textAlign: 'center' }} role="alert">{error}</div>
         ) : alternatives.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 16px', background: '#f0fdf4', borderRadius: '12px', color: '#166534' }}>
-            <CheckCircle2 size={36} style={{ margin: '0 auto 10px', display: 'block' }} />
-            <h4 style={{ fontWeight: 700, marginBottom: '6px' }}>Best Value Product!</h4>
-            <p style={{ fontSize: '0.9rem' }}>
-              <strong>{product.name}</strong> is already the most economical verified active option in the <strong>{product.category}</strong> category!
+          <div style={{ textAlign: 'center', padding: '28px 16px', background: 'var(--brand-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--brand-border)', color: 'var(--brand-forest)' }}>
+            <CheckCircle2 size={32} style={{ margin: '0 auto 8px', display: 'block' }} aria-hidden="true" />
+            <h4 style={{ fontWeight: 700, marginBottom: '4px' }}>Best Value in Category!</h4>
+            <p style={{ fontSize: '0.88rem' }}>
+              <strong>{product.name}</strong> is already the most economical verified active option in <strong>{product.category}</strong>.
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {alternatives.map((alt) => (
               <div
                 key={alt.alternativeProductId}
                 style={{
-                  border: '1px solid #bbf7d0',
-                  background: '#f0fdf4',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  border: '1px solid var(--brand-border)',
+                  background: 'var(--brand-surface)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
+                  gap: '10px',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h4 style={{ fontWeight: 700, fontSize: '1rem', color: '#14532d' }}>
+                    <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--brand-forest)' }}>
                       {alt.alternativeProductName}
                     </h4>
-                    <span style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                       Category: {alt.category} | In Stock: {alt.stockQuantity}
                     </span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#14532d' }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--brand-forest)' }}>
                       ₹{Number(alt.alternativePrice).toFixed(2)}
                     </div>
                     <div
                       style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
-                        color: '#047857',
-                        background: '#dcfce7',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
+                        color: 'var(--brand-forest)',
+                        background: '#ffffff',
+                        border: '1px solid var(--brand-border)',
+                        padding: '2px 7px',
+                        borderRadius: 'var(--radius-full)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
-                        marginTop: '4px',
+                        marginTop: '3px',
                       }}
                     >
-                      <TrendingDown size={12} />
+                      <TrendingDown size={11} aria-hidden="true" />
                       Save ₹{Number(alt.savingsAmount).toFixed(2)} ({alt.savingsPercentage}%)
                     </div>
                   </div>
                 </div>
 
-                <p style={{ fontSize: '0.85rem', color: '#166534', background: 'rgba(255,255,255,0.7)', padding: '8px 12px', borderRadius: '8px' }}>
-                  💡 <strong>Rule Explanation:</strong> {alt.reason}
+                <p style={{ fontSize: '0.82rem', color: 'var(--brand-forest)', background: 'rgba(255,255,255,0.8)', padding: '8px 10px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--brand-border)' }}>
+                  <strong>Rule Explanation:</strong> {alt.reason}
                 </p>
 
                 <button
+                  type="button"
                   className="btn-add-cart"
-                  style={{ alignSelf: 'flex-end', background: '#059669' }}
+                  style={{ alignSelf: 'flex-end', background: 'var(--brand-forest)' }}
                   onClick={() => handleAddAlternative(alt.alternativeProductId)}
                   disabled={addedId === alt.alternativeProductId}
                 >
                   {addedId === alt.alternativeProductId ? (
                     <>
-                      <CheckCircle2 size={16} /> Added!
+                      <CheckCircle2 size={15} /> Added to Cart!
                     </>
                   ) : (
                     <>
-                      Add Cheaper Option <ArrowRight size={16} />
+                      Add Cheaper Option <ArrowRight size={15} />
                     </>
                   )}
                 </button>
