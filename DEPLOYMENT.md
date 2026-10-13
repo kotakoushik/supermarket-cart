@@ -43,12 +43,13 @@ MYSQL_ROOT_PASSWORD=YOUR_STRONG_ROOT_PASSWORD_32_CHARS
 SPRING_PROFILES_ACTIVE=prod
 PORT=8080
 
-# When using Docker Compose on same host:
-DB_URL=jdbc:mysql://mysql:3306/supermarket_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+# When using local Docker Compose on same host:
+# DB_URL=jdbc:mysql://mysql:3306/supermarket_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 
-# When using a Managed Cloud Database (e.g. AWS RDS or Render MySQL):
-# DB_URL=jdbc:mysql://YOUR_MANAGED_DB_HOST:3306/supermarket_db?useSSL=true&serverTimezone=UTC
-DB_USERNAME=freshcart_user
+# When using Aiven Managed MySQL on Render (TLS Required with sslMode=REQUIRED):
+DB_URL=jdbc:mysql://mysql-38f2956d-freshcart-project.i.aivencloud.com:20119/defaultdb?sslMode=REQUIRED
+DB_USERNAME=avnadmin
+DB_PASSWORD=YOUR_AIVEN_PASSWORD_HERE
 
 # Admin Portal Master Key (Used to authorize /api/admin/** operations)
 FRESHCART_ADMIN_KEY=YOUR_SECURE_ADMIN_KEY_UUID_OR_SECRET
@@ -68,31 +69,37 @@ VITE_API_BASE_URL=/api
 
 ## 3. Deployment Walkthroughs
 
-### Option A: PaaS Deployment (Render / Railway)
+### Option A: Render Docker Web Service with Aiven MySQL (Recommended)
 
-#### Step 1: Provision Managed MySQL Database
-1. Log in to [Render Dashboard](https://dashboard.render.com/) or [Railway](https://railway.app/).
-2. Click **New +** > **PostgreSQL / MySQL** (or use an Aiven / PlanetScale MySQL instance).
-3. Name: `freshcart-mysql`, Database: `supermarket_db`, User: `freshcart_user`.
-4. Copy the internal connection URL and credentials.
+#### Step 1: Your Aiven MySQL Service Details
+- **Host**: `mysql-38f2956d-freshcart-project.i.aivencloud.com`
+- **Port**: `20119`
+- **Database**: `defaultdb`
+- **SSL / TLS**: Required (`sslMode=REQUIRED`)
+- **JDBC Connection URL**:
+  `jdbc:mysql://mysql-38f2956d-freshcart-project.i.aivencloud.com:20119/defaultdb?sslMode=REQUIRED`
 
-#### Step 2: Deploy Spring Boot Backend
-1. Click **New +** > **Web Service**.
-2. Connect your GitHub repository.
-3. Settings:
+#### Step 2: Deploy Spring Boot Backend on Render
+1. Log in to [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** > **Web Service**.
+3. Connect your repository: `https://github.com/kotakoushik/supermarket-cart`.
+4. Configure the service:
    - **Name**: `freshcart-backend`
-   - **Root Directory**: `backend`
-   - **Runtime**: `Docker` (selects `backend/Dockerfile`) or `Java`
-   - **Instance Type**: Starter / Standard (at least 512MB RAM for JVM)
+   - **Runtime**: `Docker`
+   - **Root Directory**: Leave blank (repository root) or set to `backend` (both root `Dockerfile` and `backend/Dockerfile` are supported!)
+   - **Dockerfile Path**: `Dockerfile` (or `backend/Dockerfile`)
+   - **Instance Type**: Starter or Standard (at least 512MB RAM recommended for Java 21)
    - **Health Check Path**: `/api/health`
-4. In **Environment Variables**, add:
+5. In **Environment Variables**, add:
    - `SPRING_PROFILES_ACTIVE`: `prod`
-   - `DB_URL`: `jdbc:mysql://<MANAGED_DB_HOST>:3306/supermarket_db?useSSL=true&serverTimezone=UTC`
-   - `DB_USERNAME`: `<DB_USER>`
-   - `DB_PASSWORD`: `<DB_PASSWORD>`
-   - `FRESHCART_ADMIN_KEY`: `<GENERATED_STRONG_KEY>`
-   - `CORS_ALLOWED_ORIGINS`: `https://freshcart-frontend.onrender.com,https://yourcustomdomain.com`
-5. Click **Create Web Service**. Verify logs until `Started SupermarketApplication` appears.
+   - `DB_URL`: `jdbc:mysql://mysql-38f2956d-freshcart-project.i.aivencloud.com:20119/defaultdb?sslMode=REQUIRED`
+   - `DB_USERNAME`: `avnadmin` (or your Aiven user)
+   - `DB_PASSWORD`: `[YOUR_AIVEN_PASSWORD]`
+   - `FRESHCART_ADMIN_KEY`: `[GENERATE_A_STRONG_RANDOM_UUID_KEY]`
+   - `CORS_ALLOWED_ORIGINS`: `https://your-frontend.onrender.com,http://localhost:5173`
+   *(Note: Render automatically injects `PORT=10000`; the app dynamically binds to it via `server.port=${PORT:8080}`).*
+6. Click **Create Web Service**. Verify build logs until `Started SupermarketApplication` appears.
+
 
 #### Step 3: Deploy React Frontend
 1. Click **New +** > **Static Site**.
