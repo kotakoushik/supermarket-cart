@@ -62,8 +62,19 @@ public class RecommendationService {
                 original.getCategory(), original.getId(), original.getPrice()
         );
 
+        // Intelligently rank candidates: prioritize matching product type/keywords (e.g. Butter -> Butter, Rice -> Rice, Milk -> Milk)
+        String[] origWords = original.getName().toLowerCase().split("\\s+");
         return cheaperProducts.stream()
                 .filter(p -> p.getStockQuantity() > 0)
+                .sorted((a, b) -> {
+                    long aMatches = Arrays.stream(origWords).filter(w -> w.length() >= 3 && a.getName().toLowerCase().contains(w)).count();
+                    long bMatches = Arrays.stream(origWords).filter(w -> w.length() >= 3 && b.getName().toLowerCase().contains(w)).count();
+                    if (aMatches != bMatches) {
+                        return Long.compare(bMatches, aMatches); // Higher similarity first
+                    }
+                    // If same relevance, prefer closest substitute (highest price under original)
+                    return b.getPrice().compareTo(a.getPrice());
+                })
                 .map(alt -> createAlternativeDTO(original, alt))
                 .collect(Collectors.toList());
     }

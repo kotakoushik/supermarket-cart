@@ -56,7 +56,7 @@ public class OrderServiceTest {
         CheckoutRequestDTO checkoutReq = new CheckoutRequestDTO("cart-xyz", "Koushik", "koushik@example.com", "9876543210", "123 Main Street");
 
         when(cartItemRepository.findByCartId("cart-xyz")).thenReturn(List.of(testCartItem));
-        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+        when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(testProduct));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             Order o = invocation.getArgument(0);
             o.setId(101L);
@@ -94,7 +94,7 @@ public class OrderServiceTest {
         // Product has only 1 in stock, but cart requests 2
         testProduct.setStockQuantity(1);
         when(cartItemRepository.findByCartId("cart-xyz")).thenReturn(List.of(testCartItem));
-        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+        when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(testProduct));
 
         assertThrows(InsufficientStockException.class, () -> orderService.createOrder(checkoutReq));
         verify(orderRepository, never()).save(any(Order.class));

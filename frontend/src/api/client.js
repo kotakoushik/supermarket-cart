@@ -22,6 +22,14 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const cartId = getCartId();
   config.headers['X-Cart-Id'] = cartId;
+  
+  // Attach admin key for admin endpoint requests if available in session
+  if (config.url && config.url.includes('/admin')) {
+    const adminKey = sessionStorage.getItem('freshcart_admin_key');
+    if (adminKey) {
+      config.headers['X-Admin-Key'] = adminKey;
+    }
+  }
   return config;
 });
 

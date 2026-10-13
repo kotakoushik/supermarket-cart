@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle, Key, Lock, Unlock, LogOut } from 'lucide-react';
 import apiClient from '../api/client';
 import { useCart } from '../context/CartContext';
 
@@ -18,8 +18,14 @@ const CATEGORIES = [
 const AdminPage = () => {
   const { showToast } = useCart();
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Authentication State
+  const [adminKey, setAdminKey] = useState(sessionStorage.getItem('freshcart_admin_key') || '');
+  const [isUnlocked, setIsUnlocked] = useState(Boolean(sessionStorage.getItem('freshcart_admin_key')));
+  const [verifying, setVerifying] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,16 +47,55 @@ const AdminPage = () => {
       setError(null);
       const res = await apiClient.get('/admin/products');
       setProducts(res.data);
+      setIsUnlocked(true);
     } catch (err) {
-      setError(err.message || 'Failed to fetch admin product list');
+      if (err.message && (err.message.includes('Unauthorized') || err.message.includes('401'))) {
+        setIsUnlocked(false);
+        setAuthError('Authentication required. Enter the admin access key to manage inventory.');
+      } else {
+        setError(err.message || 'Failed to fetch admin product list');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (isUnlocked) {
+      fetchProducts();
+    }
+  }, [isUnlocked]);
+
+  const handleUnlock = async (e) => {
+    e.preventDefault();
+    if (!adminKey.trim()) {
+      setAuthError('Please enter an admin key');
+      return;
+    }
+    try {
+      setVerifying(true);
+      setAuthError(null);
+      sessionStorage.setItem('freshcart_admin_key', adminKey.trim());
+      const res = await apiClient.get('/admin/products');
+      setProducts(res.data);
+      setIsUnlocked(true);
+      showToast('Admin session authenticated successfully', 'success');
+    } catch (err) {
+      sessionStorage.removeItem('freshcart_admin_key');
+      setIsUnlocked(false);
+      setAuthError(err.message || 'Invalid admin key. Check server FRESHCART_ADMIN_KEY configuration.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleLock = () => {
+    sessionStorage.removeItem('freshcart_admin_key');
+    setIsUnlocked(false);
+    setProducts([]);
+    setAdminKey('');
+    showToast('Admin portal locked', 'info');
+  };
 
   const openAddModal = () => {
     setEditingProduct(null);
@@ -142,6 +187,125 @@ const AdminPage = () => {
     }
   };
 
+  if (!isUnlocked) {
+    return (
+      <div className="container" style={{ paddingTop: '60px', marginBottom: '80px', maxWidth: '520px' }}>
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '20px',
+          padding: '36px',
+          boxShadow: 'var(--shadow-md)',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '16px',
+            background: 'rgba(5, 150, 105, 0.1)',
+            color: 'var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px'
+          }}>
+            <Lock size={28} />
+          </div>
+
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>
+            Protected Admin Portal
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '24px' }}>
+            Authentication is required to view, modify prices, and manage supermarket inventory.
+          </p>
+
+          {authError && (
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#991b1b',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              fontSize: '0.88rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              textAlign: 'left'
+            }}>
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleUnlock}>
+            <div style={{ marginBottom: '18px', textAlign: 'left' }}>
+              <label htmlFor="adminKeyInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                Admin Access Key
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Key size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input
+                  id="adminKeyInput"
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="Enter admin security key..."
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px 12px 42px',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                  }}
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={verifying}
+              style={{
+                width: '100%',
+                background: 'var(--primary)',
+                color: 'white',
+                padding: '13px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                transition: 'all 0.2s',
+              }}
+            >
+              {verifying ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" /> Verifying Key...
+                </>
+              ) : (
+                <>
+                  <Unlock size={18} /> Unlock Admin Portal
+                </>
+              )}
+            </button>
+          </form>
+
+          <div style={{ marginTop: '20px', padding: '12px', background: '#f8fafc', borderRadius: '10px', fontSize: '0.8rem', color: '#64748b' }}>
+            <strong>Dev Default Key:</strong> <code>fc-admin-key-2025</code>
+            <br />
+            Configured on server via <code>FRESHCART_ADMIN_KEY</code>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container" style={{ paddingTop: '28px', marginBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
@@ -155,21 +319,43 @@ const AdminPage = () => {
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          style={{
-            background: '#059669',
-            color: 'white',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <Plus size={18} /> Add New Product
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', color: '#059669', padding: '6px 14px', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>
+            <ShieldCheck size={16} /> Authenticated
+          </div>
+          <button
+            onClick={handleLock}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              color: '#475569',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+            }}
+            title="Lock admin session and clear credentials"
+          >
+            <LogOut size={15} /> Lock
+          </button>
+          <button
+            onClick={openAddModal}
+            style={{
+              background: '#059669',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Plus size={18} /> Add New Product
+          </button>
+        </div>
       </div>
 
       {loading ? (

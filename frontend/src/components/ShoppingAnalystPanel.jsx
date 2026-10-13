@@ -60,12 +60,21 @@ const ShoppingAnalystPanel = () => {
 
       setReport(res.data);
 
-      // By default, select all recommended actions so user sees immediate solution
-      if (res.data.recommendedActions && res.data.recommendedActions.length > 0) {
-        const initialSelected = new Set(res.data.recommendedActions.map((a) => a.id));
+      setReport(res.data);
+
+      // Keep user in full control: do not auto-apply or silently force actions
+      // Pre-select top non-conflicting actions only if the user hasn't made selections yet
+      if (selectedActionIds.size === 0 && res.data.recommendedActions && res.data.recommendedActions.length > 0) {
+        // Select only the top action per product to ensure non-conflicting initial review
+        const initialSelected = new Set();
+        const seenProducts = new Set();
+        res.data.recommendedActions.forEach((a) => {
+          if (!seenProducts.has(a.productId)) {
+            initialSelected.add(a.id);
+            seenProducts.add(a.productId);
+          }
+        });
         setSelectedActionIds(initialSelected);
-      } else {
-        setSelectedActionIds(new Set());
       }
     } catch (err) {
       console.error('Failed to analyze cart:', err);
@@ -91,17 +100,43 @@ const ShoppingAnalystPanel = () => {
     fetchAnalysis(updated);
   };
 
-  // Toggle selection of a proposed action
+  // Toggle selection of a proposed action (mutually exclusive per product)
   const handleToggleAction = (actionId) => {
     setSelectedActionIds((prev) => {
       const next = new Set(prev);
       if (next.has(actionId)) {
         next.delete(actionId);
       } else {
+        const targetAction = report?.recommendedActions?.find((a) => a.id === actionId);
+        if (targetAction) {
+          // Deselect any other action targeting the same product ID to prevent conflicts
+          report.recommendedActions.forEach((a) => {
+            if (a.productId === targetAction.productId && a.id !== actionId) {
+              next.delete(a.id);
+            }
+          });
+        }
         next.add(actionId);
       }
       return next;
     });
+  };
+
+  const handleSelectAll = () => {
+    if (!report?.recommendedActions) return;
+    const allNonConflicting = new Set();
+    const seenProducts = new Set();
+    report.recommendedActions.forEach((a) => {
+      if (!seenProducts.has(a.productId)) {
+        allNonConflicting.add(a.id);
+        seenProducts.add(a.productId);
+      }
+    });
+    setSelectedActionIds(allNonConflicting);
+  };
+
+  const handleClearAll = () => {
+    setSelectedActionIds(new Set());
   };
 
   // Calculate live projected total & savings based on user's checked actions
@@ -157,7 +192,8 @@ const ShoppingAnalystPanel = () => {
         `Applied ${chosenActions.length} change(s)! Estimated savings: ₹${liveCalculation.savings.toFixed(2)}`,
         'success'
       );
-      closeAnalyst();
+      setSelectedActionIds(new Set());
+      await fetchAnalysis(customOverrides);
     } catch (err) {
       showToast(err.message || 'Failed to apply changes', 'error');
     } finally {
@@ -417,13 +453,26 @@ const ShoppingAnalystPanel = () => {
 
             {/* 3. Actionable Recommendations Plan */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
                   Proposed Cart Optimizations ({report.recommendedActions.length})
                 </h3>
-                <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700 }}>
-                  Select suggestions to adopt
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    style={{ fontSize: '0.78rem', color: '#059669', background: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid #a7f3d0' }}
+                  >
+                    Select All Recommendations
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    style={{ fontSize: '0.78rem', color: '#64748b', background: '#f1f5f9', padding: '4px 10px', borderRadius: '6px', fontWeight: 600, border: '1px solid #e2e8f0' }}
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
 
               {report.recommendedActions.length === 0 ? (

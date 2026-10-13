@@ -273,28 +273,74 @@ public class CartAnalystService {
             return cartService.getCart(request.getCartId());
         }
 
+        // 1. Prevent conflicting actions targeting the same product
+        Set<Long> targetedProductIds = new HashSet<>();
         for (AnalystActionDTO action : request.getSelectedActions()) {
+            if (action.getProductId() == null) {
+                throw new BadRequestException("Invalid action: target product ID is null");
+            }
+            if (!targetedProductIds.add(action.getProductId())) {
+                throw new BadRequestException("Conflicting actions detected for product ID: " + action.getProductId() + 
+                        ". Only one optimization action may be applied per item.");
+            }
+        }
+
+        // 2. Validate against live cart state to prevent stale analysis bypass
+        CartResponseDTO currentCart = cartService.getCart(request.getCartId());
+        Map<Long, CartItemResponseDTO> cartItemsMap = new HashMap<>();
+        if (currentCart.getItems() != null) {
+            for (CartItemResponseDTO item : currentCart.getItems()) {
+                cartItemsMap.put(item.getProductId(), item);
+            }
+        }
+
+        for (AnalystActionDTO action : request.getSelectedActions()) {
+            CartItemResponseDTO cartItem = cartItemsMap.get(action.getProductId());
+            if (cartItem == null) {
+                throw new BadRequestException("Stale analysis: Item '" + action.getProductName() + "' is no longer in your cart.");
+            }
+
             if ("REPLACE".equalsIgnoreCase(action.getActionType())) {
-                if (action.getReplacementProductId() != null) {
-                    // Check stock of replacement product
-                    Product replacement = productRepository.findById(action.getReplacementProductId())
-                            .orElseThrow(() -> new BadRequestException("Replacement product not found: " + action.getReplacementProductId()));
-
-                    int targetQty = action.getTargetQuantity() != null && action.getTargetQuantity() > 0 
-                            ? action.getTargetQuantity() 
-                            : 1;
-
-                    // Remove original product from cart
-                    cartService.removeItemFromCart(request.getCartId(), action.getProductId());
-
-                    // Add replacement product to cart
-                    cartService.addItemToCart(request.getCartId(), new CartItemRequestDTO(replacement.getId(), targetQty));
+                if (action.getReplacementProductId() == null) {
+                    throw new BadRequestException("Replacement product ID must not be null for REPLACE action");
                 }
+
+                Product replacement = productRepository.findById(action.getReplacementProductId())
+                        .orElseThrow(() -> new BadRequestException("Replacement product not found: " + action.getReplacementProductId()));
+
+                if (!Boolean.TRUE.equals(replacement.getActive())) {
+                    throw new BadRequestException("Replacement product '" + replacement.getName() + "' is currently unavailable.");
+                }
+
+                int targetQty = action.getTargetQuantity() != null && action.getTargetQuantity() > 0 
+                        ? action.getTargetQuantity() 
+                        : cartItem.getQuantity();
+
+                if (targetQty > replacement.getStockQuantity()) {
+                    throw new BadRequestException("Insufficient stock for replacement product '" + replacement.getName() + 
+                            "'. Available: " + replacement.getStockQuantity() + ", Required: " + targetQty);
+                }
+
+                // Remove original product from cart
+                cartService.removeItemFromCart(request.getCartId(), action.getProductId());
+
+                // Add replacement product to cart
+                cartService.addItemToCart(request.getCartId(), new CartItemRequestDTO(replacement.getId(), targetQty));
+
             } else if ("REDUCE_QUANTITY".equalsIgnoreCase(action.getActionType())) {
                 int newQty = action.getTargetQuantity() != null ? action.getTargetQuantity() : 1;
+                if (newQty <= 0) {
+                    throw new BadRequestException("Target quantity must be greater than 0 for REDUCE_QUANTITY action");
+                }
+                if (newQty >= cartItem.getQuantity()) {
+                    throw new BadRequestException("Target quantity (" + newQty + ") must be less than current cart quantity (" + cartItem.getQuantity() + ")");
+                }
                 cartService.updateItemQuantity(request.getCartId(), action.getProductId(), newQty);
+
             } else if ("REMOVE".equalsIgnoreCase(action.getActionType())) {
                 cartService.removeItemFromCart(request.getCartId(), action.getProductId());
+            } else {
+                throw new BadRequestException("Unsupported action type: " + action.getActionType());
             }
         }
 
