@@ -36,8 +36,8 @@ public class AdminAuthService {
         boolean usernameMatches = username.equalsIgnoreCase(configuredUsername.trim()) ||
                 username.equalsIgnoreCase("admin@freshcart.com") ||
                 username.equalsIgnoreCase("admin");
-        boolean passwordMatches = password.equals(configuredPassword.trim()) ||
-                password.equals(configuredKey.trim());
+        boolean passwordMatches = (configuredPassword != null && !configuredPassword.isBlank() && password.equals(configuredPassword.trim())) ||
+                (configuredKey != null && !configuredKey.isBlank() && password.equals(configuredKey.trim()));
 
         if (!usernameMatches || !passwordMatches) {
             throw new UnauthorizedException("Invalid admin username or password");
@@ -57,7 +57,13 @@ public class AdminAuthService {
         if (clean.startsWith("Bearer ")) {
             clean = clean.substring(7).trim();
         }
-        return activeAdminTokens.contains(clean) || clean.equals(configuredKey.trim()) || clean.equals(configuredPassword.trim());
+        if (clean.isBlank()) {
+            return false;
+        }
+        boolean matchesActiveToken = activeAdminTokens.contains(clean);
+        boolean matchesConfiguredKey = configuredKey != null && !configuredKey.isBlank() && clean.equals(configuredKey.trim());
+        boolean matchesConfiguredPassword = configuredPassword != null && !configuredPassword.isBlank() && clean.equals(configuredPassword.trim());
+        return matchesActiveToken || matchesConfiguredKey || matchesConfiguredPassword;
     }
 
     public void logout(String token) {

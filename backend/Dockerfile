@@ -32,9 +32,9 @@ EXPOSE 8080
 ENV SPRING_PROFILES_ACTIVE=prod \
     PORT=8080
 
-# Health check using Spring Boot health endpoint
+# Health check using Spring Boot health endpoint with dynamic PORT support
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -q -O - http://localhost:8080/api/health || exit 1
+  CMD wget -q -O - http://localhost:${PORT:-8080}/api/health || exit 1
 
 # Execute container as unprivileged user
 USER freshcart
