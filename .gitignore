@@ -21,7 +21,10 @@ yarn-error.log*
 .vscode/
 .DS_Store
 Thumbs.db
+.env
+.env.*
 *.env
+!.env.example
 
 # H2 / DB Local files
 *.db
