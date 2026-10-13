@@ -22,12 +22,19 @@ An intelligent, full-stack supermarket cart and inventory management system buil
    - **1-Click AI Swaps**: Swap high-cost cart items with budget-friendly alternatives directly in the cart.
    - **Complementary Recommendations**: Recommends related groceries based on categories in the current cart.
 
-4. **Reliable Transactional Checkout**:
+4. **FreshCart AI Shopping Analyst**:
+   - **Floating & Omnipresent Launcher**: Accessible via a floating bot launcher button across catalog & cart, navbar, and checkout sidebar.
+   - **Explainable Classification**: Deterministically categorizes cart items into essentials (staples, dairy, grains, produce) vs. discretionary/optional items with clear, non-medical rationales.
+   - **Interactive User Control**: Allows instant manual classification overrides; never removes or swaps items without explicit user consent.
+   - **Actionable Recommendations**: Computes cheaper alternative replacements, quantity reductions, and optional removals using high-precision `BigDecimal` calculations.
+   - **Live Projected Total & Batch Apply**: Previews projected cart totals and savings in real time, with a single-click transactional batch apply.
+
+5. **Reliable Transactional Checkout**:
    - Strict server-side total validation (never trusts client pricing).
    - Atomic database transactions: inventory is safely deducted upon checkout; failed orders rollback completely.
    - Generates instant order receipt with breakdown, customer address, and unique order ID.
 
-5. **Admin Inventory Management**:
+6. **Admin Inventory Management**:
    - Manage all store products: add new items, update prices & stock, and toggle active/inactive status in real time.
 
 ---
@@ -129,6 +136,8 @@ npm run dev
 | `DELETE` | `/api/cart/items/{productId}` | Remove item from cart |
 | `DELETE` | `/api/cart` | Clear all items from current cart |
 | `POST` | `/api/budget/check` | Analyze cart total against budget limit |
+| `POST` | `/api/analyst/analyze` | AI Shopping Analyst report (essentials, savings, suggestions) |
+| `POST` | `/api/analyst/apply` | Apply user-selected action plan to cart transactionally |
 | `GET` | `/api/recommendations` | Get complementary product recommendations |
 | `POST` | `/api/orders` | Place order, deduct inventory, and clear cart |
 | `GET` | `/api/orders/{id}` | Get confirmed order receipt by ID |
@@ -146,10 +155,11 @@ mvn test
 **Results**:
 - `ProductServiceTest`: 5 passed
 - `CartServiceTest`: 4 passed
+- `CartAnalystServiceTest`: 3 passed (Empty cart, over-budget analysis, batch action execution)
 - `OrderServiceTest`: 3 passed
 - `RecommendationServiceTest`: 2 passed
 - `SupermarketApplicationTests`: 1 passed
-- **Total: 15 passed, 0 failures, 0 errors**
+- **Total: 18 passed, 0 failures, 0 errors**
 
 ### Frontend Production Build
 ```bash

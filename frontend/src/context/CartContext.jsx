@@ -20,6 +20,10 @@ export const CartProvider = ({ children }) => {
   });
   const [budgetResult, setBudgetResult] = useState(null);
   const [toast, setToast] = useState(null);
+  const [isAnalystOpen, setIsAnalystOpen] = useState(false);
+
+  const openAnalyst = useCallback(() => setIsAnalystOpen(true), []);
+  const closeAnalyst = useCallback(() => setIsAnalystOpen(false), []);
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ message, type });
@@ -151,6 +155,9 @@ export const CartProvider = ({ children }) => {
         clearCart,
         refreshCart: fetchCart,
         showToast,
+        isAnalystOpen,
+        openAnalyst,
+        closeAnalyst,
       }}
     >
       {children}

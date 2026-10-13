@@ -9,6 +9,8 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import AdminPage from './pages/AdminPage';
+import ShoppingAnalystPanel from './components/ShoppingAnalystPanel';
+import AnalystFloatingButton from './components/AnalystFloatingButton';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const ToastNotification = () => {
@@ -44,6 +46,8 @@ function App() {
             </Routes>
           </main>
           <Footer />
+          <ShoppingAnalystPanel />
+          <AnalystFloatingButton />
           <ToastNotification />
         </div>
       </Router>

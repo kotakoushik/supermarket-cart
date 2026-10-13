@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Store, ShieldCheck, History, Sparkles } from 'lucide-react';
+import { ShoppingCart, Store, ShieldCheck, History, Sparkles, Bot } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const Navbar = () => {
-  const { cart, budget, budgetResult } = useCart();
+  const { cart, openAnalyst } = useCart();
   const location = useLocation();
 
   return (
@@ -41,6 +41,21 @@ const Navbar = () => {
             <ShieldCheck size={18} />
             Admin
           </Link>
+
+          <button
+            onClick={openAnalyst}
+            className="nav-link"
+            style={{
+              background: '#ecfdf5',
+              color: '#059669',
+              fontWeight: 700,
+              border: '1px solid #a7f3d0',
+            }}
+            title="Open AI Shopping Analyst"
+          >
+            <Bot size={18} />
+            AI Analyst
+          </button>
 
           <Link to="/cart" className="nav-cart-btn">
             <ShoppingCart size={18} />

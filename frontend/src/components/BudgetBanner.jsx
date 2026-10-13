@@ -1,9 +1,9 @@
 import React from 'react';
-import { DollarSign, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { DollarSign, AlertTriangle, CheckCircle, TrendingUp, Bot } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const BudgetBanner = () => {
-  const { cart, budget, budgetResult, updateBudget } = useCart();
+  const { cart, budget, budgetResult, updateBudget, openAnalyst } = useCart();
 
   const total = Number(cart.totalAmount || 0);
   const budgetVal = Number(budget || 0);
@@ -48,6 +48,26 @@ const BudgetBanner = () => {
               placeholder="1000"
             />
           </div>
+
+          <button
+            onClick={openAnalyst}
+            style={{
+              background: '#059669',
+              color: 'white',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+              cursor: 'pointer',
+            }}
+            title="Open AI Shopping Analyst"
+          >
+            <Bot size={16} /> AI Analyse
+          </button>
         </div>
       </div>
 

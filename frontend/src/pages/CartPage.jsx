@@ -11,13 +11,14 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
+  Bot,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import apiClient from '../api/client';
 import BudgetBanner from '../components/BudgetBanner';
 
 const CartPage = () => {
-  const { cart, updateQuantity, removeFromCart, clearCart, loading, budgetResult, addToCart } = useCart();
+  const { cart, updateQuantity, removeFromCart, clearCart, loading, budgetResult, addToCart, openAnalyst } = useCart();
   const navigate = useNavigate();
 
   const [recommendations, setRecommendations] = useState([]);
@@ -250,6 +251,29 @@ const CartPage = () => {
               <span>Total Payable:</span>
               <span>₹{Number(cart.totalAmount || 0).toFixed(2)}</span>
             </div>
+
+            <button
+              onClick={openAnalyst}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
+                color: 'white',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '16px',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                cursor: 'pointer',
+              }}
+              title="Open FreshCart AI Shopping Analyst"
+            >
+              <Bot size={18} /> AI Analyse My Cart
+            </button>
 
             <button
               className="btn-checkout"
