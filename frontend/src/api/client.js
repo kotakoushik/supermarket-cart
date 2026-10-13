@@ -22,6 +22,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const cartId = getCartId();
   config.headers['X-Cart-Id'] = cartId;
+  config.headers['X-Session-Key'] = cartId;
   
   // Attach customer auth token if available
   const customerToken = localStorage.getItem('freshcart_customer_token');

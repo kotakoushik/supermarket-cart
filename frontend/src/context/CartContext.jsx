@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import apiClient, { getCartId } from '../api/client';
-
-const CartContext = createContext(null);
+import { CartContext } from './cartContextInstance';
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState({
@@ -165,6 +164,6 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-export { CartContext };
-export { useCart } from './useCart';
+export { CartContext } from './cartContextInstance';
+export default CartProvider;
 

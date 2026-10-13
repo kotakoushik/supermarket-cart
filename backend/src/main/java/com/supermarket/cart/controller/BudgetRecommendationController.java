@@ -23,18 +23,21 @@ public class BudgetRecommendationController {
     @PostMapping("/budget/check")
     public ResponseEntity<BudgetCheckResponseDTO> checkBudget(
             @RequestHeader(value = "X-Cart-Id", required = false) String headerCartId,
+            @RequestHeader(value = "X-Session-Key", required = false) String headerSessionKey,
             @Valid @RequestBody BudgetCheckRequestDTO request) {
         if (request.getCartId() == null || request.getCartId().isBlank()) {
-            request.setCartId(headerCartId != null ? headerCartId : "default-session");
+            String resolved = headerCartId != null ? headerCartId : (headerSessionKey != null ? headerSessionKey : "default-session");
+            request.setCartId(resolved);
         }
         return ResponseEntity.ok(recommendationService.checkBudget(request));
     }
 
-    @GetMapping("/recommendations")
+    @GetMapping({"/recommendations", "/recommendations/cart"})
     public ResponseEntity<List<ProductDTO>> getRecommendations(
             @RequestHeader(value = "X-Cart-Id", required = false) String headerCartId,
+            @RequestHeader(value = "X-Session-Key", required = false) String headerSessionKey,
             @RequestParam(value = "cartId", required = false) String paramCartId) {
-        String cartId = headerCartId != null ? headerCartId : (paramCartId != null ? paramCartId : "default-session");
+        String cartId = headerCartId != null ? headerCartId : (headerSessionKey != null ? headerSessionKey : (paramCartId != null ? paramCartId : "default-session"));
         return ResponseEntity.ok(recommendationService.getRecommendations(cartId));
     }
 }

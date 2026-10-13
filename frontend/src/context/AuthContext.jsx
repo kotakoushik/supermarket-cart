@@ -1,7 +1,6 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import apiClient from '../api/client';
-
-export const AuthContext = createContext(null);
+import { AuthContext } from './authContextInstance';
 
 const CUSTOMER_TOKEN_KEY = 'freshcart_customer_token';
 const ADMIN_KEY_STORAGE = 'freshcart_admin_key';
@@ -144,3 +143,6 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export { AuthContext } from './authContextInstance';
+export default AuthProvider;
