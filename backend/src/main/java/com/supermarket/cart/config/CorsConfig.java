@@ -36,8 +36,9 @@ public class CorsConfig {
 
         config.setAllowCredentials(true);
         config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
         config.addExposedHeader("X-Cart-Id");
+        config.addExposedHeader("X-Session-Key");
+        config.addExposedHeader("X-Customer-Token");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

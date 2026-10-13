@@ -43,6 +43,7 @@ const CheckoutPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
 
     if (!formData.customerName.trim()) {

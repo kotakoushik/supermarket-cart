@@ -31,12 +31,14 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponseDTO> createOrder(
             @RequestHeader(value = "X-Cart-Id", required = false) String headerCartId,
+            @RequestHeader(value = "X-Session-Key", required = false) String headerSessionKey,
             @RequestHeader(value = "X-Customer-Token", required = false) String customerToken,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody CheckoutRequestDTO request) {
 
         if (request.getCartId() == null || request.getCartId().isBlank()) {
-            request.setCartId(headerCartId != null ? headerCartId : "default-session");
+            String resolved = headerCartId != null ? headerCartId : (headerSessionKey != null ? headerSessionKey : "default-session");
+            request.setCartId(resolved);
         }
 
         String token = customerToken != null && !customerToken.isBlank() ? customerToken : authHeader;
