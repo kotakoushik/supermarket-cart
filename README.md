@@ -155,7 +155,8 @@ docker compose logs -f backend
 ```
 
 - **Frontend Accessible At**: `http://localhost:80` (or `http://localhost:5173`)
-- **Backend API & Health**: `http://localhost:8080/api/health`
+- **Backend Direct Host API & Health**: `http://localhost:8081/api/health` (container port 8080 mapped to host 8081)
+- **Backend via Nginx Reverse Proxy**: `http://localhost/api/health`
 
 ### Stopping and Cleaning Up Containers
 
