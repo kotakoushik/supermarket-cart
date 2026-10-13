@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 const AnalystFloatingButton = () => {
   const { cart, openAnalyst } = useCart();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, XCircle, Check } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80';
 

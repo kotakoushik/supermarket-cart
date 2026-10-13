@@ -18,6 +18,10 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
     @NotBlank(message = "Customer name is required")
     @Column(nullable = false)
     private String customerName;
@@ -32,6 +36,9 @@ public class Order {
 
     @Column(length = 500)
     private String deliveryAddress;
+
+    @Column(nullable = false)
+    private String paymentMethod = "COD";
 
     @NotNull
     @DecimalMin(value = "0.00")
@@ -56,6 +63,19 @@ public class Order {
         this.customerPhone = customerPhone;
         this.deliveryAddress = deliveryAddress;
         this.totalAmount = totalAmount;
+        this.paymentMethod = "COD";
+        this.createdAt = LocalDateTime.now();
+        this.orderStatus = "CONFIRMED";
+    }
+
+    public Order(Customer customer, String customerName, String customerEmail, String customerPhone, String deliveryAddress, String paymentMethod, BigDecimal totalAmount) {
+        this.customer = customer;
+        this.customerName = customerName;
+        this.customerEmail = customerEmail;
+        this.customerPhone = customerPhone;
+        this.deliveryAddress = deliveryAddress;
+        this.paymentMethod = paymentMethod != null && !paymentMethod.isBlank() ? paymentMethod : "COD";
+        this.totalAmount = totalAmount;
         this.createdAt = LocalDateTime.now();
         this.orderStatus = "CONFIRMED";
     }
@@ -66,6 +86,14 @@ public class Order {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
     }
 
     public String getCustomerName() {
@@ -98,6 +126,14 @@ public class Order {
 
     public void setDeliveryAddress(String deliveryAddress) {
         this.deliveryAddress = deliveryAddress;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public BigDecimal getTotalAmount() {

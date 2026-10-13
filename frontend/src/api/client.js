@@ -23,7 +23,14 @@ apiClient.interceptors.request.use((config) => {
   const cartId = getCartId();
   config.headers['X-Cart-Id'] = cartId;
   
-  // Attach admin key for admin endpoint requests if available in session
+  // Attach customer auth token if available
+  const customerToken = localStorage.getItem('freshcart_customer_token');
+  if (customerToken) {
+    config.headers['X-Customer-Token'] = customerToken;
+    config.headers['Authorization'] = `Bearer ${customerToken}`;
+  }
+  
+  // Attach admin key/token for admin endpoint requests if available in session
   if (config.url && config.url.includes('/admin')) {
     const adminKey = sessionStorage.getItem('freshcart_admin_key');
     if (adminKey) {

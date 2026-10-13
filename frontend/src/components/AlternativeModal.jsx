@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Sparkles, TrendingDown, ArrowRight, CheckCircle2 } from 'lucide-react';
 import apiClient from '../api/client';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 const AlternativeModal = ({ product, onClose }) => {
   const { addToCart } = useCart();

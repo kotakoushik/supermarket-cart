@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle, Key, Lock, Unlock, LogOut, Search } from 'lucide-react';
+import { Plus, Edit3, Power, RefreshCw, X, ShieldCheck, Check, AlertCircle, Key, Lock, Unlock, LogOut, Search, Eye, EyeOff, User } from 'lucide-react';
 import apiClient from '../api/client';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 const CATEGORIES = [
   'Dairy',
@@ -22,10 +22,13 @@ const AdminPage = () => {
   const [error, setError] = useState(null);
 
   // Authentication State
-  const [adminKey, setAdminKey] = useState(sessionStorage.getItem('freshcart_admin_key') || '');
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(Boolean(sessionStorage.getItem('freshcart_admin_key')));
   const [verifying, setVerifying] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [activeAdmin, setActiveAdmin] = useState(null);
 
   // Search filter for admin inventory
   const [adminSearch, setAdminSearch] = useState('');
@@ -63,9 +66,10 @@ const AdminPage = () => {
       setProducts(res.data);
       setIsUnlocked(true);
     } catch (err) {
-      if (err.message && (err.message.includes('Unauthorized') || err.message.includes('401'))) {
+      if (err.message && (err.message.includes('Unauthorized') || err.message.includes('401') || err.message.includes('Forbidden') || err.message.includes('403'))) {
         setIsUnlocked(false);
-        setAuthError('Authentication required. Enter the admin access key to manage inventory.');
+        sessionStorage.removeItem('freshcart_admin_key');
+        setAuthError('Administrator session expired or unauthorized. Please sign in.');
       } else {
         setError(err.message || 'Failed to fetch admin product list');
       }
@@ -82,33 +86,47 @@ const AdminPage = () => {
 
   const handleUnlock = async (e) => {
     e.preventDefault();
-    if (!adminKey.trim()) {
-      setAuthError('Please enter an admin key');
+    if (!adminUsername.trim() || !adminPassword) {
+      setAuthError('Please enter both administrator username and password.');
       return;
     }
     try {
       setVerifying(true);
       setAuthError(null);
-      sessionStorage.setItem('freshcart_admin_key', adminKey.trim());
-      const res = await apiClient.get('/admin/products');
-      setProducts(res.data);
+      const res = await apiClient.post('/admin/auth/login', {
+        username: adminUsername.trim(),
+        password: adminPassword,
+      });
+      const token = res.data.token;
+      sessionStorage.setItem('freshcart_admin_key', token);
+      setActiveAdmin(res.data.admin);
+      
+      const prodRes = await apiClient.get('/admin/products');
+      setProducts(prodRes.data);
       setIsUnlocked(true);
-      showToast('Admin session authenticated successfully', 'success');
+      showToast('Admin authenticated successfully', 'success');
     } catch (err) {
       sessionStorage.removeItem('freshcart_admin_key');
       setIsUnlocked(false);
-      setAuthError(err.message || 'Invalid admin key. Check server FRESHCART_ADMIN_KEY configuration.');
+      setAuthError(err.message || 'Invalid administrator credentials. Access denied.');
     } finally {
       setVerifying(false);
     }
   };
 
-  const handleLock = () => {
-    sessionStorage.removeItem('freshcart_admin_key');
-    setIsUnlocked(false);
-    setProducts([]);
-    setAdminKey('');
-    showToast('Admin portal locked', 'info');
+  const handleLock = async () => {
+    try {
+      await apiClient.post('/admin/auth/logout');
+    } catch (e) {
+      // Ignore network errors on logout
+    } finally {
+      sessionStorage.removeItem('freshcart_admin_key');
+      setIsUnlocked(false);
+      setProducts([]);
+      setAdminPassword('');
+      setActiveAdmin(null);
+      showToast('Admin session locked', 'info');
+    }
   };
 
   const openAddModal = () => {
@@ -238,10 +256,10 @@ const AdminPage = () => {
           </div>
 
           <h1 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)' }}>
-            Protected Admin Portal
+            Supermarket Admin Console
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '22px' }}>
-            Authentication is required to view, modify prices, and manage supermarket inventory.
+            Enter administrator credentials to manage catalog pricing, inventory, and product status.
           </p>
 
           {authError && (
@@ -263,23 +281,64 @@ const AdminPage = () => {
             </div>
           )}
 
-          <form onSubmit={handleUnlock}>
-            <div style={{ marginBottom: '18px', textAlign: 'left' }}>
-              <label htmlFor="adminKeyInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
-                Admin Access Key
+          <form onSubmit={handleUnlock} noValidate>
+            <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+              <label htmlFor="adminUsernameInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                Administrator Username / Email
               </label>
               <div style={{ position: 'relative' }}>
-                <Key size={17} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <User size={17} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
-                  id="adminKeyInput"
-                  type="password"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  placeholder="Enter admin security key..."
+                  id="adminUsernameInput"
+                  type="text"
+                  value={adminUsername}
+                  onChange={(e) => setAdminUsername(e.target.value)}
+                  placeholder="admin@freshcart.com"
                   className="form-control"
                   style={{ paddingLeft: '38px' }}
                   required
+                  autoFocus
                 />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '22px', textAlign: 'left' }}>
+              <label htmlFor="adminPasswordInput" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                Administrator Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={17} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  id="adminPasswordInput"
+                  type={showPassword ? 'text' : 'password'}
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="Enter administrator password..."
+                  className="form-control"
+                  style={{ paddingLeft: '38px', paddingRight: '40px' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px'
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
@@ -287,23 +346,19 @@ const AdminPage = () => {
               type="submit"
               disabled={verifying}
               className="btn-checkout"
-              style={{ marginTop: '0' }}
+              style={{ marginTop: '0', width: '100%' }}
             >
               {verifying ? (
                 <>
-                  <RefreshCw size={17} className="animate-spin" /> Verifying Key...
+                  <RefreshCw size={17} className="animate-spin" /> Verifying Credentials...
                 </>
               ) : (
                 <>
-                  <Unlock size={17} /> Unlock Admin Portal
+                  <Unlock size={17} /> Sign In to Admin Console
                 </>
               )}
             </button>
           </form>
-
-          <div style={{ marginTop: '20px', padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <strong>Dev Default Key:</strong> <code>fc-admin-key-2025</code>
-          </div>
         </div>
       </main>
     );

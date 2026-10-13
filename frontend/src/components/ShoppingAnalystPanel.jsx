@@ -16,7 +16,7 @@ import {
   HelpCircle,
   Check,
 } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 import apiClient from '../api/client';
 
 const ShoppingAnalystPanel = () => {

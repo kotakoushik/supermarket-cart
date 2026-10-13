@@ -1,11 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Store, ShieldCheck, History, Sparkles, Bot, MapPin } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { ShoppingCart, Store, ShieldCheck, History, Bot, MapPin, User, LogIn, LogOut, UserPlus } from 'lucide-react';
+import { useCart } from '../context/useCart';
+import { useAuth } from '../context/useAuth';
 
 const Navbar = () => {
-  const { cart, openAnalyst } = useCart();
+  const { cart, openAnalyst, showToast } = useCart();
+  const { customer, isAuthenticated, customerLogout } = useAuth();
   const location = useLocation();
+
+  const handleLogout = async () => {
+    await customerLogout();
+    showToast('You have signed out successfully', 'info');
+  };
 
   return (
     <nav className="navbar" aria-label="Main Navigation">
@@ -61,6 +68,44 @@ const Navbar = () => {
             <Bot size={16} />
             <span>AI Analyst</span>
           </button>
+
+          {/* Customer Authentication State */}
+          {isAuthenticated ? (
+            <div className="nav-user-badge" title={`Signed in as ${customer?.fullName} (${customer?.email})`}>
+              <div className="nav-user-avatar">
+                {customer?.fullName ? customer.fullName.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="nav-user-name">{customer?.fullName?.split(' ')[0] || 'Customer'}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="nav-user-logout-btn"
+                title="Sign Out"
+                aria-label="Sign Out"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="nav-auth-group">
+              <Link
+                to="/login"
+                className={`nav-link nav-auth-link ${location.pathname === '/login' ? 'active' : ''}`}
+                title="Customer Sign In"
+              >
+                <LogIn size={16} />
+                <span>Sign In</span>
+              </Link>
+              <Link
+                to="/register"
+                className="nav-register-btn"
+                title="Create Customer Account"
+              >
+                <UserPlus size={15} />
+                <span>Register</span>
+              </Link>
+            </div>
+          )}
 
           <Link
             to="/cart"

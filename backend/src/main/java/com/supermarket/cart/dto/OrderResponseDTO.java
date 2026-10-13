@@ -7,10 +7,12 @@ import java.util.List;
 
 public class OrderResponseDTO {
     private Long id;
+    private Long customerId;
     private String customerName;
     private String customerEmail;
     private String customerPhone;
     private String deliveryAddress;
+    private String paymentMethod;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
     private String orderStatus;
@@ -19,12 +21,14 @@ public class OrderResponseDTO {
     public OrderResponseDTO() {
     }
 
-    public OrderResponseDTO(Long id, String customerName, String customerEmail, String customerPhone, String deliveryAddress, BigDecimal totalAmount, LocalDateTime createdAt, String orderStatus, List<OrderItemResponseDTO> items) {
+    public OrderResponseDTO(Long id, Long customerId, String customerName, String customerEmail, String customerPhone, String deliveryAddress, String paymentMethod, BigDecimal totalAmount, LocalDateTime createdAt, String orderStatus, List<OrderItemResponseDTO> items) {
         this.id = id;
+        this.customerId = customerId;
         this.customerName = customerName;
         this.customerEmail = customerEmail;
         this.customerPhone = customerPhone;
         this.deliveryAddress = deliveryAddress;
+        this.paymentMethod = paymentMethod;
         this.totalAmount = totalAmount;
         this.createdAt = createdAt;
         this.orderStatus = orderStatus;
@@ -37,6 +41,14 @@ public class OrderResponseDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
     }
 
     public String getCustomerName() {
@@ -69,6 +81,14 @@ public class OrderResponseDTO {
 
     public void setDeliveryAddress(String deliveryAddress) {
         this.deliveryAddress = deliveryAddress;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public BigDecimal getTotalAmount() {

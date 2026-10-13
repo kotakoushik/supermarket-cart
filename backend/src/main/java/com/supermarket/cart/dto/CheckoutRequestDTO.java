@@ -19,6 +19,8 @@ public class CheckoutRequestDTO {
     @NotBlank(message = "Delivery address is required")
     private String deliveryAddress;
 
+    private String paymentMethod = "COD";
+
     public CheckoutRequestDTO() {
     }
 
@@ -28,6 +30,16 @@ public class CheckoutRequestDTO {
         this.customerEmail = customerEmail;
         this.customerPhone = customerPhone;
         this.deliveryAddress = deliveryAddress;
+        this.paymentMethod = "COD";
+    }
+
+    public CheckoutRequestDTO(String cartId, String customerName, String customerEmail, String customerPhone, String deliveryAddress, String paymentMethod) {
+        this.cartId = cartId;
+        this.customerName = customerName;
+        this.customerEmail = customerEmail;
+        this.customerPhone = customerPhone;
+        this.deliveryAddress = deliveryAddress;
+        this.paymentMethod = paymentMethod != null && !paymentMethod.isBlank() ? paymentMethod : "COD";
     }
 
     public String getCartId() {
@@ -68,5 +80,13 @@ public class CheckoutRequestDTO {
 
     public void setDeliveryAddress(String deliveryAddress) {
         this.deliveryAddress = deliveryAddress;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

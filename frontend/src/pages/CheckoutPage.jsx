@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, Truck, ArrowLeft, CheckCircle2, AlertCircle, Banknote, CreditCard } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { ShieldCheck, Truck, ArrowLeft, CheckCircle2, AlertCircle, Banknote, CreditCard, Lock, LogIn, UserPlus } from 'lucide-react';
+import { useCart } from '../context/useCart';
+import { useAuth } from '../context/useAuth';
 import apiClient, { getCartId } from '../api/client';
 
 const CheckoutPage = () => {
   const { cart, refreshCart, showToast } = useCart();
+  const { customer, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -18,6 +21,18 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Auto-fill from authenticated customer profile
+  useEffect(() => {
+    if (customer) {
+      setFormData({
+        customerName: customer.fullName || '',
+        customerEmail: customer.email || '',
+        customerPhone: customer.phone || '',
+        deliveryAddress: customer.address || '',
+      });
+    }
+  }, [customer]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -51,6 +66,7 @@ const CheckoutPage = () => {
         customerEmail: formData.customerEmail.trim(),
         customerPhone: formData.customerPhone.trim(),
         deliveryAddress: formData.deliveryAddress.trim(),
+        paymentMethod: paymentMethod,
       };
 
       const res = await apiClient.post('/orders', payload);
@@ -105,6 +121,68 @@ const CheckoutPage = () => {
       <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text-main)' }}>
         Checkout & Express Delivery
       </h1>
+
+      {/* Account notification banner if not logged in */}
+      {!isAuthenticated && (
+        <div style={{
+          background: 'var(--brand-surface)',
+          border: '1px solid var(--brand-border)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--brand-forest)', fontSize: '0.95rem' }}>
+              Have a FreshCart Account?
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Sign in to automatically save this order to your persistent Order History.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link
+              to="/login"
+              state={{ from: '/checkout' }}
+              style={{
+                background: 'var(--brand-forest)',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <LogIn size={15} /> Sign In
+            </Link>
+            <Link
+              to="/register"
+              state={{ from: '/checkout' }}
+              style={{
+                background: 'white',
+                border: '1px solid var(--border)',
+                color: 'var(--text-main)',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <UserPlus size={15} /> Register
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', alignItems: 'start' }}>
         {/* Checkout Form */}
@@ -217,14 +295,13 @@ const CheckoutPage = () => {
                     onChange={() => setPaymentMethod('COD')}
                     style={{ accentColor: 'var(--brand-forest)' }}
                   />
-                  <Banknote size={16} color="var(--brand-forest)" />
-                  <span>Cash on Delivery</span>
+                  <Banknote size={16} color="var(--brand-forest)" /> Cash on Delivery
                 </label>
 
                 <label
                   style={{
-                    border: paymentMethod === 'UPI' ? '2px solid var(--brand-forest)' : '1px solid var(--border)',
-                    background: paymentMethod === 'UPI' ? 'var(--brand-surface)' : 'white',
+                    border: paymentMethod === 'ONLINE' ? '2px solid var(--brand-forest)' : '1px solid var(--border)',
+                    background: paymentMethod === 'ONLINE' ? 'var(--brand-surface)' : 'white',
                     borderRadius: 'var(--radius-sm)',
                     padding: '10px 12px',
                     display: 'flex',
@@ -238,68 +315,66 @@ const CheckoutPage = () => {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="UPI"
-                    checked={paymentMethod === 'UPI'}
-                    onChange={() => setPaymentMethod('UPI')}
+                    value="ONLINE"
+                    checked={paymentMethod === 'ONLINE'}
+                    onChange={() => setPaymentMethod('ONLINE')}
                     style={{ accentColor: 'var(--brand-forest)' }}
                   />
-                  <CreditCard size={16} color="var(--brand-forest)" />
-                  <span>UPI / Card on Delivery</span>
+                  <CreditCard size={16} color="var(--brand-forest)" /> UPI / Card
                 </label>
               </div>
             </div>
 
-            <div style={{ marginTop: '20px', background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              <ShieldCheck size={18} color="var(--brand-forest)" style={{ flexShrink: 0 }} />
-              <span>
-                Atomic database transaction ensures pessimistic stock reservation and verified pricing.
-              </span>
-            </div>
-
             <button
               type="submit"
-              className="btn-checkout"
-              style={{ marginTop: '20px' }}
               disabled={submitting}
+              className="btn-checkout"
+              style={{ width: '100%', marginTop: '12px' }}
             >
-              {submitting ? 'Placing Order...' : `Confirm & Place Order (₹${Number(cart.totalAmount).toFixed(2)})`}
+              {submitting ? (
+                <>Placing Order...</>
+              ) : (
+                <>
+                  <ShieldCheck size={18} /> Confirm Order & Pay ₹{Number(cart.totalAmount).toFixed(2)}
+                </>
+              )}
             </button>
           </form>
         </div>
 
-        {/* Order Review Sidebar */}
-        <aside style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '22px' }} aria-label="Order Items Summary">
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '14px', color: 'var(--text-main)' }}>
-            Basket Summary ({cart.totalItems})
-          </h2>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
+        {/* Order Summary Sidebar */}
+        <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '24px' }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '16px', color: 'var(--text-main)' }}>Order Summary</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
             {cart.items.map((item) => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{item.productName}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Qty: {item.quantity} × ₹{Number(item.unitPrice).toFixed(2)}</div>
-                </div>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>₹{Number(item.subtotal).toFixed(2)}</div>
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span>
+                  {item.productName} <span style={{ color: 'var(--text-muted)' }}>× {item.quantity}</span>
+                </span>
+                <span style={{ fontWeight: 600 }}>₹{Number(item.subtotal).toFixed(2)}</span>
               </div>
             ))}
           </div>
 
-          <div style={{ borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-              <span>Subtotal:</span>
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              <span>Subtotal</span>
               <span>₹{Number(cart.subtotal).toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-              <span>Delivery Fee:</span>
-              <span style={{ color: 'var(--brand-forest)', fontWeight: 700 }}>FREE</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              <span>Estimated GST (5%)</span>
+              <span>₹{Number(cart.tax).toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--border)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              <span>Total Payable:</span>
-              <span>₹{Number(cart.totalAmount).toFixed(2)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              <span>Delivery Charges</span>
+              <span style={{ color: 'var(--brand-forest)', fontWeight: 600 }}>FREE (Express)</span>
+            </div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-main)' }}>
+              <span>Total Payable</span>
+              <span style={{ color: 'var(--brand-forest)' }}>₹{Number(cart.totalAmount).toFixed(2)}</span>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
     </main>
   );

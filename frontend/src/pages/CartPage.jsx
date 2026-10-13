@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 import apiClient from '../api/client';
 import BudgetBanner from '../components/BudgetBanner';
 

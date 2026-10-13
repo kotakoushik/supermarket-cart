@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, CheckCircle2, TrendingUp, Bot } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 
 const BudgetBanner = () => {
   const { cart, budget, budgetResult, updateBudget, openAnalyst } = useCart();
