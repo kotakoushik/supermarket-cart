@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, XCircle, Check } from 'lucide-react';
+import { ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, XCircle, Check, Plus } from 'lucide-react';
 import { useCart } from '../context/useCart';
 
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80';
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=80';
 
 const ProductCard = ({ product, onSelectAlternative }) => {
   const { addToCart, loading } = useCart();
@@ -36,6 +36,7 @@ const ProductCard = ({ product, onSelectAlternative }) => {
           onError={() => setImgSrc(DEFAULT_IMAGE)}
           loading="lazy"
         />
+        <div className="product-image-overlay" />
         <span className="product-category-tag">{product.category}</span>
 
         {isOutOfStock ? (
@@ -50,19 +51,20 @@ const ProductCard = ({ product, onSelectAlternative }) => {
           </span>
         ) : (
           <span className="product-stock-tag in-stock" role="status">
-            <CheckCircle2 size={12} aria-hidden="true" />
-            <span>In Stock</span>
+            <span className="stock-dot" />
+            <span>Farm Fresh</span>
           </span>
         )}
       </div>
 
       <div className="product-info">
         <h3 className="product-name" title={product.name}>{product.name}</h3>
-        <p className="product-description">{product.description || 'Verified supermarket pantry item.'}</p>
+        <p className="product-description">{product.description || 'Verified pure supermarket pantry staple.'}</p>
 
         <div className="product-footer">
-          <div className="product-price" aria-label={`Price: ${Number(product.price).toFixed(2)} Indian Rupees`}>
-            ₹{Number(product.price).toFixed(2)}
+          <div className="product-price-block">
+            <span className="price-currency">₹</span>
+            <span className="product-price-num">{Number(product.price).toFixed(2)}</span>
           </div>
 
           <div className="product-actions">
@@ -99,7 +101,7 @@ const ProductCard = ({ product, onSelectAlternative }) => {
                 <span>Adding...</span>
               ) : (
                 <>
-                  <ShoppingCart size={14} aria-hidden="true" />
+                  <Plus size={14} aria-hidden="true" />
                   <span>Add</span>
                 </>
               )}
