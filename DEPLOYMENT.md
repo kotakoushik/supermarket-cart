@@ -86,8 +86,14 @@ VITE_API_BASE_URL=/api
 4. Configure the service:
    - **Name**: `freshcart-backend`
    - **Runtime**: `Docker`
-   - **Root Directory**: Leave blank (repository root) or set to `backend` (both root `Dockerfile` and `backend/Dockerfile` are supported!)
-   - **Dockerfile Path**: `Dockerfile` (or `backend/Dockerfile`)
+   - **Recommended Settings (Root Context):**
+     - **Root Directory**: *(leave blank)*
+     - **Dockerfile Path**: `Dockerfile`
+     - **Docker Build Context Directory**: `.` *(or leave blank)*
+   - **Alternative Settings (Backend Context):**
+     - **Root Directory**: `backend` (or leave blank)
+     - **Dockerfile Path**: `backend/Dockerfile`
+     - **Docker Build Context Directory**: `backend` *(IMPORTANT: Must be the folder `backend`, NEVER `backend/Dockerfile`)*
    - **Instance Type**: Starter or Standard (at least 512MB RAM recommended for Java 21)
    - **Health Check Path**: `/api/health`
 5. In **Environment Variables**, add:

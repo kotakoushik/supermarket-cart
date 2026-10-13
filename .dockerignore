@@ -1,0 +1,11 @@
+# Root .dockerignore for Render & Docker builds
+backend/target
+frontend/node_modules
+frontend/dist
+.git
+.idea
+.vscode
+*.env
+*.log
+.DS_Store
+Thumbs.db
