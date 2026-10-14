@@ -102,22 +102,25 @@ VITE_API_BASE_URL=/api
    - `DB_USERNAME`: `avnadmin` (or your Aiven user)
    - `DB_PASSWORD`: `[YOUR_AIVEN_PASSWORD]`
    - `FRESHCART_ADMIN_KEY`: `[GENERATE_A_STRONG_RANDOM_UUID_KEY]`
-   - `CORS_ALLOWED_ORIGINS`: `https://your-frontend.onrender.com,http://localhost:5173`
+   - `CORS_ALLOWED_ORIGINS`: `https://smartsmart-frontend.onrender.com,http://localhost:5173`
+   *(Note: The backend now also automatically permits all `https://*.onrender.com` domains via `allowedOriginPatterns`).*
    *(Note: Render automatically injects `PORT=10000`; the app dynamically binds to it via `server.port=${PORT:8080}`).*
 6. Click **Create Web Service**. Verify build logs until `Started SupermarketApplication` appears.
+7. Note down your backend URL (e.g. `https://<your-backend-name>.onrender.com`).
 
 
-#### Step 3: Deploy React Frontend
+#### Step 3: Deploy React Frontend (e.g. `smartsmart-frontend`)
 1. Click **New +** > **Static Site**.
 2. Settings:
-   - **Name**: `freshcart-frontend`
+   - **Name**: `smartsmart-frontend`
    - **Root Directory**: `frontend`
    - **Build Command**: `npm run build`
    - **Publish Directory**: `dist`
-3. In **Environment Variables**:
-   - `VITE_API_BASE_URL`: `https://freshcart-backend.onrender.com/api`
+3. In **Environment Variables** (CRITICAL):
+   - `VITE_API_BASE_URL`: `https://<your-backend-name>.onrender.com/api`
+   *(⚠️ CRITICAL: Render Static Sites DO NOT proxy `/api` to external hosts. If `VITE_API_BASE_URL` is omitted or left as `/api`, Vite compiles the API client to call the static frontend domain itself `https://smartsmart-frontend.onrender.com/api/auth/register`, which returns an empty 200 OK or 404 from Cloudflare/Render's static CDN without ever reaching Spring Boot).*
 4. In **Redirects / Rewrites**:
-   - Add rewrite: Source `/*` -> Destination `/index.html` (Status `200`).
+   - Add rewrite: Source `/*` -> Destination `/index.html` (Action: `Rewrite`).
 
 ---
 

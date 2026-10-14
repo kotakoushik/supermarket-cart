@@ -193,12 +193,12 @@ async function run() {
       fullName: 'Alice Test Shopper',
       email: testEmail,
       password: 'Password123!',
-      deliveryAddress: '42 Greenway Road, Bengaluru',
-      phoneNumber: '9876543210',
+      address: '42 Greenway Road, Bengaluru',
+      phone: '9876543210',
     });
-    if (regRes.status === 201 && regRes.data.token) {
+    if (regRes.status === 201 && regRes.data.token && regRes.data.customer) {
       customerToken = regRes.data.token;
-      pass('13. Customer registration succeeds with BCrypt', `Token issued for ${regRes.data.email}`);
+      pass('13. Customer registration succeeds with BCrypt', `Token issued for ${regRes.data.customer.email}`);
     } else {
       throw new Error(`Customer registration failed: ${JSON.stringify(regRes.data)}`);
     }

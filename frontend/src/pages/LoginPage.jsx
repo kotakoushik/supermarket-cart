@@ -31,11 +31,11 @@ const LoginPage = () => {
     const result = await customerLogin(email.trim(), password);
     setSubmitting(false);
 
-    if (result.success) {
-      showToast(`Welcome back, ${result.customer.fullName}!`, 'success');
+    if (result.success && result.customer) {
+      showToast(`Welcome back, ${result.customer.fullName || 'Shopper'}!`, 'success');
       navigate(redirectPath, { replace: true });
     } else {
-      setFormError(result.error);
+      setFormError(result.error || 'Login failed. Please check your credentials.');
     }
   };
 

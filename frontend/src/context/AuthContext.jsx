@@ -48,6 +48,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await apiClient.post('/auth/login', { email, password });
       const data = res.data;
+      if (!data || typeof data !== 'object' || !data.token || !data.customer) {
+        throw new Error('Server returned an unexpected or non-JSON response. Please verify backend API connectivity and VITE_API_BASE_URL.');
+      }
       localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
       setCustomerToken(data.token);
       setCustomer(data.customer);
@@ -70,6 +73,9 @@ export const AuthProvider = ({ children }) => {
         address
       });
       const data = res.data;
+      if (!data || typeof data !== 'object' || !data.token || !data.customer) {
+        throw new Error('Server returned an unexpected or non-JSON response. Please verify backend API connectivity and VITE_API_BASE_URL.');
+      }
       localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
       setCustomerToken(data.token);
       setCustomer(data.customer);

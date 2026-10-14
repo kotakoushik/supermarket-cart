@@ -48,11 +48,11 @@ const RegisterPage = () => {
     });
     setSubmitting(false);
 
-    if (result.success) {
-      showToast(`Account created! Welcome to FreshCart, ${result.customer.fullName}!`, 'success');
+    if (result.success && result.customer) {
+      showToast(`Account created! Welcome to FreshCart, ${result.customer.fullName || 'Shopper'}!`, 'success');
       navigate(redirectPath, { replace: true });
     } else {
-      setFormError(result.error);
+      setFormError(result.error || 'Failed to create account. Please try again.');
     }
   };
 

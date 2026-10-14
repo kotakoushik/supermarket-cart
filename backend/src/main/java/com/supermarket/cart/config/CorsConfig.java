@@ -32,9 +32,10 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://127.0.0.1:80",
                         "http://127.0.0.1:8080",
                         "http://127.0.0.1:8081",
-                        "http://127.0.0.1:5173"
+                        "http://127.0.0.1:5173",
+                        "https://smartsmart-frontend.onrender.com"
                 )
-                .allowedOriginPatterns("http://localhost*", "http://127.0.0.1*", "https://*.vercel.app", "https://*.netlify.app")
+                .allowedOriginPatterns("http://localhost*", "http://127.0.0.1*", "https://*.vercel.app", "https://*.netlify.app", "https://*.onrender.com")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .exposedHeaders("X-Cart-Id", "X-Session-Key", "X-Customer-Token")
@@ -64,10 +65,12 @@ public class CorsConfig implements WebMvcConfigurer {
         config.addAllowedOrigin("http://127.0.0.1:8080");
         config.addAllowedOrigin("http://127.0.0.1:8081");
         config.addAllowedOrigin("http://127.0.0.1:5173");
+        config.addAllowedOrigin("https://smartsmart-frontend.onrender.com");
         config.addAllowedOriginPattern("http://localhost*");
         config.addAllowedOriginPattern("http://127.0.0.1*");
         config.addAllowedOriginPattern("https://*.vercel.app");
         config.addAllowedOriginPattern("https://*.netlify.app");
+        config.addAllowedOriginPattern("https://*.onrender.com");
 
         config.setAllowCredentials(true);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
