@@ -45,8 +45,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     let errorMsg =
-      error.response?.data?.message ||
-      error.response?.data?.error;
+      (error.response?.data?.details && Array.isArray(error.response.data.details) && error.response.data.details.length > 0)
+        ? error.response.data.details.join(', ')
+        : (error.response?.data?.message || error.response?.data?.error);
       
     if (!errorMsg) {
       if (error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'))) {

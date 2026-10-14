@@ -1,8 +1,11 @@
 package com.supermarket.cart.config;
 
+import com.supermarket.cart.entity.Customer;
 import com.supermarket.cart.entity.Product;
+import com.supermarket.cart.repository.CustomerRepository;
 import com.supermarket.cart.repository.ProductRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,9 +15,12 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private final ProductRepository productRepository;
+    private final CustomerRepository customerRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public DataInitializer(ProductRepository productRepository) {
+    public DataInitializer(ProductRepository productRepository, CustomerRepository customerRepository) {
         this.productRepository = productRepository;
+        this.customerRepository = customerRepository;
     }
 
     @Override
@@ -68,6 +74,17 @@ public class DataInitializer implements CommandLineRunner {
             );
 
             productRepository.saveAll(products);
+        }
+
+        if (!customerRepository.existsByEmailIgnoreCase("customer@freshcart.com")) {
+            Customer demoCustomer = new Customer(
+                    "Demo Shopper",
+                    "customer@freshcart.com",
+                    passwordEncoder.encode("Password123!"),
+                    "+91 9876543210",
+                    "123 Indiranagar, Bengaluru"
+            );
+            customerRepository.save(demoCustomer);
         }
     }
 }

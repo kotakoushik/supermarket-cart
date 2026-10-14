@@ -53,6 +53,9 @@ public class CustomerAuthService {
 
     @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO request) {
+        if (request == null || request.getEmail() == null || request.getPassword() == null) {
+            throw new BadRequestException("Please enter both email and password.");
+        }
         String email = request.getEmail().trim().toLowerCase();
         Customer customer = customerRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
@@ -104,7 +107,7 @@ public class CustomerAuthService {
 
     private String cleanToken(String raw) {
         String token = raw.trim();
-        if (token.startsWith("Bearer ")) {
+        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
             token = token.substring(7).trim();
         }
         return token;

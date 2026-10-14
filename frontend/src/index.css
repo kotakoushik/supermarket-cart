@@ -1886,6 +1886,65 @@ input, select, textarea {
   margin-bottom: 20px;
 }
 
+.demo-credentials-card {
+  background: var(--brand-forest-soft);
+  border: 1px dashed var(--brand-forest-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 0.83rem;
+}
+
+.demo-credentials-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.demo-badge {
+  background: var(--brand-forest);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-link-demo {
+  background: none;
+  border: none;
+  color: var(--brand-forest);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.btn-link-demo:hover {
+  color: var(--brand-forest-deep);
+}
+
+.demo-credentials-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text-muted);
+}
+
+.demo-credentials-body code {
+  font-weight: 600;
+  color: var(--text-main);
+  background: rgba(27, 67, 36, 0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;

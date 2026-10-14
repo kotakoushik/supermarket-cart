@@ -16,19 +16,21 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const redirectPath = location.state?.from || '/';
+  const rawFrom = location.state?.from;
+  const redirectPath = typeof rawFrom === 'string' ? rawFrom : (rawFrom?.pathname || '/');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
 
-    if (!email.trim() || !password) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
       setFormError('Please enter both email and password.');
       return;
     }
 
     setSubmitting(true);
-    const result = await customerLogin(email.trim(), password);
+    const result = await customerLogin(cleanEmail, password);
     setSubmitting(false);
 
     if (result.success && result.customer) {
@@ -37,6 +39,12 @@ const LoginPage = () => {
     } else {
       setFormError(result.error || 'Login failed. Please check your credentials.');
     }
+  };
+
+  const handleFillDemo = () => {
+    setEmail('customer@freshcart.com');
+    setPassword('Password123!');
+    setFormError('');
   };
 
   return (
@@ -48,6 +56,23 @@ const LoginPage = () => {
           </div>
           <h2>Welcome Back</h2>
           <p>Sign in to your FreshCart account to view orders and checkout faster</p>
+        </div>
+
+        <div className="demo-credentials-card">
+          <div className="demo-credentials-header">
+            <span className="demo-badge">Quick Demo Account</span>
+            <button
+              type="button"
+              className="btn-link-demo"
+              onClick={handleFillDemo}
+            >
+              Fill Demo Credentials
+            </button>
+          </div>
+          <div className="demo-credentials-body">
+            <span>Email: <code>customer@freshcart.com</code></span>
+            <span>Password: <code>Password123!</code></span>
+          </div>
         </div>
 
         {formError && (
@@ -121,6 +146,12 @@ const LoginPage = () => {
             Don't have an account yet?{' '}
             <Link to="/register" state={{ from: redirectPath }}>
               Create Account <ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+            </Link>
+          </p>
+          <p style={{ marginTop: '8px', fontSize: '0.82rem', color: '#666' }}>
+            Store Manager?{' '}
+            <Link to="/admin" style={{ color: 'var(--brand-forest)', fontWeight: 600 }}>
+              Admin Portal
             </Link>
           </p>
         </div>
