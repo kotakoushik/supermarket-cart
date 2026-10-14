@@ -20,7 +20,9 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -207,5 +209,43 @@ public class CustomerAuthAndOrderTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(badAdminLogin)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testCorsPreflightAndRegistrationForProductionFrontend() throws Exception {
+        String prodOrigin = "https://smartsmart-frontend.onrender.com";
+
+        // 1. Verify OPTIONS Preflight handles headers and exact origin without wildcards
+        mockMvc.perform(options("/api/auth/register")
+                .header("Origin", prodOrigin)
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "Content-Type, X-Cart-Id, X-Session-Key"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", prodOrigin))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                .andExpect(header().string("Access-Control-Allow-Methods", containsString("POST")))
+                .andExpect(header().string("Access-Control-Allow-Headers", containsString("Content-Type")))
+                .andExpect(header().string("Access-Control-Allow-Headers", containsString("X-Cart-Id")))
+                .andExpect(header().string("Access-Control-Allow-Headers", containsString("X-Session-Key")));
+
+        // 2. Verify actual POST registration with Origin returns CORS headers and 201 Created
+        String email = "cors_test_" + UUID.randomUUID() + "@example.com";
+        RegisterRequestDTO regRequest = new RegisterRequestDTO(
+                "CORS Test User",
+                email,
+                "password123",
+                "+91 9999988888",
+                "123 Cloud Street"
+        );
+
+        mockMvc.perform(post("/api/auth/register")
+                .header("Origin", prodOrigin)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(regRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Access-Control-Allow-Origin", prodOrigin))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.customer.email").value(email.toLowerCase()));
     }
 }
