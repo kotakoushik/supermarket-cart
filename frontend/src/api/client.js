@@ -13,7 +13,7 @@ export const getCartId = () => {
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,11 +44,19 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const errorMsg =
+    let errorMsg =
       error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      'An unexpected error occurred';
+      error.response?.data?.error;
+      
+    if (!errorMsg) {
+      if (error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'))) {
+        errorMsg = 'Request timed out. The server may be waking up from sleep (Render free tier takes ~30-45s). Please retry.';
+      } else if (error.message === 'Network Error' || !error.response) {
+        errorMsg = 'Network error: Unable to connect to backend server. The server may be waking up from sleep. Please wait a moment and retry.';
+      } else {
+        errorMsg = error.message || 'An unexpected error occurred';
+      }
+    }
     return Promise.reject(new Error(errorMsg));
   }
 );
